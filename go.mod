@@ -1,4 +1,4 @@
-module github.com/RSSU-Shellcode/RT-Argument
+module github.com/RSSU-Shellcode/GRT-Config
 
 go 1.20
 
