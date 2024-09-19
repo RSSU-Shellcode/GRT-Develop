@@ -15,8 +15,7 @@ func TestEncode(t *testing.T) {
 		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
 		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
 		arg2 := make([]byte, 0)
-		args := [][]byte{arg0, arg1, arg2}
-		stub, err := Encode(args)
+		stub, err := Encode(arg0, arg1, arg2)
 		require.NoError(t, err)
 
 		header := 44
@@ -34,7 +33,7 @@ func TestEncode(t *testing.T) {
 		defer pg.Unpatch()
 
 		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
-		stub, err := Encode([][]byte{arg0})
+		stub, err := Encode(arg0)
 		require.Error(t, err)
 		require.Nil(t, stub)
 	})
@@ -46,7 +45,7 @@ func TestDecode(t *testing.T) {
 		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
 		arg2 := make([]byte, 0)
 		args := [][]byte{arg0, arg1, arg2}
-		stub, err := Encode(args)
+		stub, err := Encode(args...)
 		require.NoError(t, err)
 
 		output, err := Decode(stub)
@@ -61,7 +60,7 @@ func TestDecode(t *testing.T) {
 	})
 
 	t.Run("no argument", func(t *testing.T) {
-		stub, err := Encode(nil)
+		stub, err := Encode()
 		require.NoError(t, err)
 
 		output, err := Decode(stub)
@@ -73,8 +72,7 @@ func TestDecode(t *testing.T) {
 		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
 		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
 		arg2 := make([]byte, 0)
-		args := [][]byte{arg0, arg1, arg2}
-		stub, err := Encode(args)
+		stub, err := Encode(arg0, arg1, arg2)
 		require.NoError(t, err)
 
 		// destruct checksum

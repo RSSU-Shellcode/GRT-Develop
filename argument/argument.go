@@ -21,7 +21,7 @@ const (
 )
 
 // Encode is used to encode and encrypt arguments for runtime argument stub
-func Encode(args [][]byte) ([]byte, error) {
+func Encode(args ...[]byte) ([]byte, error) {
 	key := make([]byte, cryptoKeySize)
 	_, err := rand.Read(key)
 	if err != nil {
@@ -84,7 +84,7 @@ func encryptStub(stub []byte) {
 // Decode is used to decrypt and decode arguments from raw stub.
 func Decode(stub []byte) ([][]byte, error) {
 	if len(stub) < offsetFirstArg {
-		return nil, errors.New("stub is too short")
+		return nil, errors.New("invalid argument stub")
 	}
 	// calculate checksum
 	var checksum uint32
@@ -94,7 +94,7 @@ func Decode(stub []byte) ([][]byte, error) {
 	}
 	expected := binary.LittleEndian.Uint32(stub[offsetChecksum:])
 	if checksum != expected {
-		return nil, errors.New("invalid checksum")
+		return nil, errors.New("invalid argument stub checksum")
 	}
 	numArgs := binary.LittleEndian.Uint32(stub[offsetNumArgs:])
 	if numArgs == 0 {
