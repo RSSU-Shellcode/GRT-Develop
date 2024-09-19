@@ -55,7 +55,7 @@ func TestDecode(t *testing.T) {
 
 	t.Run("short stub", func(t *testing.T) {
 		stub, err := Decode(nil)
-		require.EqualError(t, err, "stub is too short")
+		require.EqualError(t, err, "invalid argument stub")
 		require.Nil(t, stub)
 	})
 
@@ -79,7 +79,7 @@ func TestDecode(t *testing.T) {
 		copy(stub[offsetChecksum:], []byte{0x00, 0x00, 0x00, 0x00})
 
 		output, err := Decode(stub)
-		require.EqualError(t, err, "invalid checksum")
+		require.EqualError(t, err, "invalid argument stub checksum")
 		require.Nil(t, output)
 	})
 }

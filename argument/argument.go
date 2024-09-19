@@ -20,7 +20,7 @@ const (
 	offsetFirstArg = 32 + 4 + 4 + 4
 )
 
-// Encode is used to encode and encrypt arguments for runtime argument stub
+// Encode is used to encode and encrypt arguments to stub.
 func Encode(args ...[]byte) ([]byte, error) {
 	key := make([]byte, cryptoKeySize)
 	_, err := rand.Read(key)
