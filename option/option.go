@@ -19,6 +19,7 @@ const (
 	StubSize = 64
 )
 
+// options offset of the option stub.
 const (
 	OptOffsetNotEraseInstruction   = 1
 	OptOffsetNotAdjustProtect      = 2
@@ -27,32 +28,34 @@ const (
 
 // Options contains options about Gleam-RT.
 type Options struct {
-	// not erase runtime instructions after call Runtime_M.Exit
+	// not erase runtime instructions after call Runtime_M.Exit.
 	NotEraseInstruction bool
 
-	// not adjust current memory page protect for erase runtime
+	// not adjust current memory page protect for erase runtime.
 	NotAdjustProtect bool
 
-	// track current thread for some special executable file like Golang
+	// track current thread for some special executable file like Golang.
 	TrackCurrentThread bool
 }
 
 // Set is used to adjust options in the runtime shellcode template.
-func Set(tpl []byte, opts *Options) error {
+func Set(tpl []byte, opts *Options) ([]byte, error) {
 	// check shellcode runtime template is valid
 	if len(tpl) < StubSize {
-		return errors.New("invalid runtime shellcode template")
+		return nil, errors.New("invalid runtime shellcode template")
 	}
 	stub := bytes.Repeat([]byte{0x00}, StubSize)
 	stub[0] = StubMagic
 	if !bytes.Equal(tpl[len(tpl)-StubSize:], stub) {
-		return errors.New("invalid runtime option stub")
+		return nil, errors.New("invalid runtime option stub")
 	}
 	// write options to stub
 	if opts == nil {
 		opts = new(Options)
 	}
-	stub = tpl[len(tpl)-StubSize:]
+	output := make([]byte, len(tpl))
+	copy(output, tpl)
+	stub = output[len(output)-StubSize:]
 	var opt byte
 	if opts.NotEraseInstruction {
 		opt = 1
@@ -72,7 +75,7 @@ func Set(tpl []byte, opts *Options) error {
 		opt = 0
 	}
 	stub[OptOffsetNotTrackCurrentThread] = opt
-	return nil
+	return output, nil
 }
 
 // Get is used to read options from the runtime shellcode option stub.
