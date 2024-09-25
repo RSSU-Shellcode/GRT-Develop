@@ -93,3 +93,15 @@ func TestGet(t *testing.T) {
 		require.Nil(t, opts)
 	})
 }
+
+func TestFlag(t *testing.T) {
+	opts := Options{
+		NotEraseInstruction: true,
+		NotAdjustProtect:    true,
+		TrackCurrentThread:  true,
+	}
+	Flag(&opts)
+
+	expected := Options{}
+	require.Equal(t, expected, opts)
+}
