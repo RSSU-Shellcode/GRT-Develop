@@ -3,6 +3,7 @@ package option
 import (
 	"bytes"
 	"errors"
+	"flag"
 )
 
 // +------------+---------+---------+
@@ -12,11 +13,11 @@ import (
 // +------------+---------+---------+
 
 const (
-	// StubMagic is the mark of options stub.
-	StubMagic = 0xFC
-
 	// StubSize is the option stub total size at the runtime tail.
 	StubSize = 64
+
+	// StubMagic is the mark of options stub.
+	StubMagic = 0xFC
 )
 
 // options offset of the option stub.
@@ -34,7 +35,7 @@ type Options struct {
 	// not adjust current memory page protect for erase runtime.
 	NotAdjustProtect bool
 
-	// track current thread for some special executable file like Golang.
+	// track current thread for test or debug mode.
 	TrackCurrentThread bool
 }
 
@@ -102,4 +103,20 @@ func Get(sc []byte, offset int) (*Options, error) {
 		opts.TrackCurrentThread = true
 	}
 	return &opts, nil
+}
+
+// Flag is used to read options from command line.
+func Flag(opts *Options) {
+	flag.BoolVar(
+		&opts.NotEraseInstruction, "opt-nei", false,
+		"not erase runtime instructions after call Runtime_M.Exit",
+	)
+	flag.BoolVar(
+		&opts.NotAdjustProtect, "opt-nap", false,
+		"not adjust current memory page protect for erase runtime",
+	)
+	flag.BoolVar(
+		&opts.TrackCurrentThread, "opt-tct", false,
+		"track current thread for test or debug mode",
+	)
 }
