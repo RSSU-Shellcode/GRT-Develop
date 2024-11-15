@@ -2,6 +2,7 @@ package argument
 
 import (
 	"bytes"
+	"compress/flate"
 	"crypto/rand"
 	"errors"
 	"testing"
@@ -82,4 +83,23 @@ func TestDecode(t *testing.T) {
 		require.EqualError(t, err, "invalid argument stub checksum")
 		require.Nil(t, output)
 	})
+}
+
+func TestCompressRatio(t *testing.T) {
+	arg := bytes.Repeat([]byte{0x00}, 256*1024)
+
+	for i := 0; i < 1000; i++ {
+		stub, err := Encode(arg)
+		require.NoError(t, err)
+
+		buf := bytes.NewBuffer(make([]byte, 0, 256*1024))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		require.NoError(t, err)
+		_, err = w.Write(stub)
+		require.NoError(t, err)
+		err = w.Close()
+		require.NoError(t, err)
+
+		require.Greaterf(t, buf.Len(), len(stub), "bad compress ratio at %d\n", i)
+	}
 }
