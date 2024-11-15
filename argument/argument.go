@@ -64,20 +64,26 @@ func Encode(args ...[]byte) ([]byte, error) {
 }
 
 func encryptStub(stub []byte) {
-	key := stub[:cryptoKeySize]
 	data := stub[offsetFirstArg:]
-	last := byte(0xFF)
-	var keyIdx = 0
+	key := stub[:cryptoKeySize]
+	last := binary.LittleEndian.Uint64(key[:8])
+	ctr := binary.LittleEndian.Uint64(key[8:])
+	keyIdx := last % 32
 	for i := 0; i < len(data); i++ {
-		b := data[i] ^ last
+		b := data[i]
+		b ^= byte(last)
+		b = rol(b, uint8(last%8))
 		b ^= key[keyIdx]
-		last = data[i]
+		b += byte(ctr ^ last)
+		b = ror(b, uint8(last%8))
 		data[i] = b
 		// update key index
 		keyIdx++
 		if keyIdx >= cryptoKeySize {
 			keyIdx = 0
 		}
+		ctr++
+		last = xorShift64(last)
 	}
 }
 
@@ -115,19 +121,40 @@ func Decode(stub []byte) ([][]byte, error) {
 }
 
 func decryptStub(stub []byte) {
-	key := stub[:cryptoKeySize]
 	data := stub[offsetFirstArg:]
-	last := byte(0xFF)
-	var keyIdx = 0
+	key := stub[:cryptoKeySize]
+	last := binary.LittleEndian.Uint64(key[:8])
+	ctr := binary.LittleEndian.Uint64(key[8:])
+	keyIdx := last % 32
 	for i := 0; i < len(data); i++ {
-		b := data[i] ^ last
+		b := data[i]
+		b = rol(b, uint8(last%8))
+		b -= byte(ctr ^ last)
 		b ^= key[keyIdx]
+		b = ror(b, uint8(last%8))
+		b ^= byte(last)
 		data[i] = b
-		last = b
 		// update key index
 		keyIdx++
 		if keyIdx >= cryptoKeySize {
 			keyIdx = 0
 		}
+		ctr++
+		last = xorShift64(last)
 	}
+}
+
+func xorShift64(seed uint64) uint64 {
+	seed ^= seed << 13
+	seed ^= seed >> 7
+	seed ^= seed << 17
+	return seed
+}
+
+func ror(value byte, bits uint8) byte {
+	return value>>bits | value<<(8-bits)
+}
+
+func rol(value byte, bits uint8) byte {
+	return value<<bits | value>>(8-bits)
 }
