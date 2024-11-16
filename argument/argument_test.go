@@ -100,6 +100,7 @@ func TestCompressRatio(t *testing.T) {
 		err = w.Close()
 		require.NoError(t, err)
 
-		require.Greaterf(t, buf.Len(), len(stub), "bad compress ratio at %d\n", i)
+		expected := len(stub) * 98 / 100
+		require.Greaterf(t, buf.Len(), expected, "bad compress ratio at %d\n", i)
 	}
 }

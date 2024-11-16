@@ -68,7 +68,7 @@ func encryptStub(stub []byte) {
 	key := stub[:cryptoKeySize]
 	last := binary.LittleEndian.Uint64(key[:8])
 	ctr := binary.LittleEndian.Uint64(key[8:])
-	keyIdx := last % 32
+	keyIdx := last % cryptoKeySize
 	for i := 0; i < len(data); i++ {
 		b := data[i]
 		b ^= byte(last)
@@ -125,7 +125,7 @@ func decryptStub(stub []byte) {
 	key := stub[:cryptoKeySize]
 	last := binary.LittleEndian.Uint64(key[:8])
 	ctr := binary.LittleEndian.Uint64(key[8:])
-	keyIdx := last % 32
+	keyIdx := last % cryptoKeySize
 	for i := 0; i < len(data); i++ {
 		b := data[i]
 		b = rol(b, uint8(last%8))
