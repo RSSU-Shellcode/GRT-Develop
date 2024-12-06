@@ -66,8 +66,8 @@ func Encode(args ...[]byte) ([]byte, error) {
 func encryptStub(stub []byte) {
 	data := stub[offsetFirstArg:]
 	key := stub[:cryptoKeySize]
-	last := binary.LittleEndian.Uint64(key[:8])
-	ctr := binary.LittleEndian.Uint64(key[8:])
+	last := binary.LittleEndian.Uint32(key[:4])
+	ctr := binary.LittleEndian.Uint32(key[4:])
 	keyIdx := last % cryptoKeySize
 	for i := 0; i < len(data); i++ {
 		b := data[i]
@@ -83,7 +83,7 @@ func encryptStub(stub []byte) {
 			keyIdx = 0
 		}
 		ctr++
-		last = xorShift64(last)
+		last = xorShift32(last)
 	}
 }
 
@@ -123,8 +123,8 @@ func Decode(stub []byte) ([][]byte, error) {
 func decryptStub(stub []byte) {
 	data := stub[offsetFirstArg:]
 	key := stub[:cryptoKeySize]
-	last := binary.LittleEndian.Uint64(key[:8])
-	ctr := binary.LittleEndian.Uint64(key[8:])
+	last := binary.LittleEndian.Uint32(key[:4])
+	ctr := binary.LittleEndian.Uint32(key[4:])
 	keyIdx := last % cryptoKeySize
 	for i := 0; i < len(data); i++ {
 		b := data[i]
@@ -140,14 +140,14 @@ func decryptStub(stub []byte) {
 			keyIdx = 0
 		}
 		ctr++
-		last = xorShift64(last)
+		last = xorShift32(last)
 	}
 }
 
-func xorShift64(seed uint64) uint64 {
+func xorShift32(seed uint32) uint32 {
 	seed ^= seed << 13
-	seed ^= seed >> 7
-	seed ^= seed << 17
+	seed ^= seed >> 17
+	seed ^= seed << 5
 	return seed
 }
 
