@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/For-ACGN/monkey v0.0.0-20240317114606-276cb1362405
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
