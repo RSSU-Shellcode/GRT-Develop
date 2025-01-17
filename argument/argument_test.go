@@ -13,15 +13,24 @@ import (
 
 func TestEncode(t *testing.T) {
 	t.Run("common", func(t *testing.T) {
-		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
-		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
-		arg2 := make([]byte, 0)
+		arg0 := &Arg{
+			ID:   0,
+			Data: []byte{0x12, 0x34, 0x56, 0x78},
+		}
+		arg1 := &Arg{
+			ID:   1,
+			Data: bytes.Repeat([]byte("hello runtime"), 10),
+		}
+		arg2 := &Arg{
+			ID:   2,
+			Data: make([]byte, 0),
+		}
 		stub, err := Encode(arg0, arg1, arg2)
 		require.NoError(t, err)
 
-		header := 44
-		argSize := 3 * 4
-		argLen := len(arg0) + len(arg1)
+		header := offsetFirstArg
+		argSize := 3 * (4 + 4)
+		argLen := len(arg0.Data) + len(arg1.Data)
 		expected := header + argSize + argLen
 		require.Len(t, stub, expected)
 	})
@@ -33,19 +42,45 @@ func TestEncode(t *testing.T) {
 		pg := monkey.Patch(rand.Read, patch)
 		defer pg.Unpatch()
 
-		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
+		arg0 := &Arg{
+			ID:   0,
+			Data: []byte{0x12, 0x34, 0x56, 0x78},
+		}
 		stub, err := Encode(arg0)
 		require.Error(t, err)
+		require.Nil(t, stub)
+	})
+
+	t.Run("id is already exists", func(t *testing.T) {
+		arg0 := &Arg{
+			ID:   0,
+			Data: []byte{0x12, 0x34, 0x56, 0x78},
+		}
+		arg1 := &Arg{
+			ID:   0,
+			Data: bytes.Repeat([]byte("hello runtime"), 10),
+		}
+		stub, err := Encode(arg0, arg1)
+		require.EqualError(t, err, "argument id 0 is already exists")
 		require.Nil(t, stub)
 	})
 }
 
 func TestDecode(t *testing.T) {
 	t.Run("common", func(t *testing.T) {
-		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
-		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
-		arg2 := make([]byte, 0)
-		args := [][]byte{arg0, arg1, arg2}
+		arg0 := &Arg{
+			ID:   0,
+			Data: []byte{0x12, 0x34, 0x56, 0x78},
+		}
+		arg1 := &Arg{
+			ID:   1,
+			Data: bytes.Repeat([]byte("hello runtime"), 10),
+		}
+		arg2 := &Arg{
+			ID:   2,
+			Data: make([]byte, 0),
+		}
+		args := []*Arg{arg0, arg1, arg2}
 		stub, err := Encode(args...)
 		require.NoError(t, err)
 
@@ -70,9 +105,18 @@ func TestDecode(t *testing.T) {
 	})
 
 	t.Run("invalid checksum", func(t *testing.T) {
-		arg0 := []byte{0x12, 0x34, 0x56, 0x78}
-		arg1 := bytes.Repeat([]byte("hello runtime"), 10)
-		arg2 := make([]byte, 0)
+		arg0 := &Arg{
+			ID:   0,
+			Data: []byte{0x12, 0x34, 0x56, 0x78},
+		}
+		arg1 := &Arg{
+			ID:   1,
+			Data: bytes.Repeat([]byte("hello runtime"), 10),
+		}
+		arg2 := &Arg{
+			ID:   2,
+			Data: make([]byte, 0),
+		}
 		stub, err := Encode(arg0, arg1, arg2)
 		require.NoError(t, err)
 
@@ -86,7 +130,10 @@ func TestDecode(t *testing.T) {
 }
 
 func TestCompressRatio(t *testing.T) {
-	arg := bytes.Repeat([]byte{0x00}, 256*1024)
+	arg := &Arg{
+		ID:   0,
+		Data: bytes.Repeat([]byte{0x00}, 256*1024),
+	}
 
 	for i := 0; i < 1000; i++ {
 		stub, err := Encode(arg)
