@@ -25,10 +25,15 @@ func main() {
     tpl, err = option.Set(tpl, &opts)
     checkError(err)
 
-    args := [][]byte{
-        []byte("arg1"), []byte("arg2"),
+    arg1 := &argument.Arg{
+        ID:   0,
+        Data: []byte("arg1"),
     }
-    stub, err := argument.Encode(args...)
+    arg2 := &argument.Arg{
+        ID:   1,
+        Data: []byte("arg2"),
+    }
+    stub, err := argument.Encode(arg1, arg2)
     checkError(err)
 
     output := append(tpl, stub...)
