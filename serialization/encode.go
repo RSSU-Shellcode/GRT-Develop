@@ -15,7 +15,7 @@ func Marshal(v any) ([]byte, error) {
 	value := reflect.ValueOf(v)
 	if value.Kind() == reflect.Ptr {
 		if value.IsNil() {
-			return nil, errors.New("value is a nil pointer passed")
+			return nil, errors.New("value is a nil pointer")
 		}
 		value = value.Elem()
 	}
