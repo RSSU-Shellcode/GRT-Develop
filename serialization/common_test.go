@@ -47,4 +47,6 @@ type testStruct struct {
 	Arg40 []float32
 	Arg41 []float64
 	Arg42 []bool
+
+	unexported int
 }
