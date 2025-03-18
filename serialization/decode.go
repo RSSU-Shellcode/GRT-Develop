@@ -194,7 +194,6 @@ func decodePointer(reader *bytes.Reader, field reflect.Value, size uint32) error
 		err error
 	)
 	switch field.Type().Kind() {
-	case reflect.Uintptr:
 	case reflect.String:
 		buf = make([]byte, size)
 		_, err = io.ReadFull(reader, buf)

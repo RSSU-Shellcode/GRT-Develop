@@ -89,8 +89,6 @@ func Marshal(v any) ([]byte, error) {
 			if field.Bool() {
 				data[0] = 1
 			}
-		case reflect.Uintptr:
-			desc = flagPointer
 		case reflect.String:
 			data = stringToUTF16(field.String())
 			desc = flagPointer | uint32(len(data)) // #nosec G115

@@ -16,7 +16,7 @@ func TestMarshal(t *testing.T) {
 			Arg4: "",
 			Arg5: 0x19,
 			Arg6: 0x1548,
-			Arg7: 0x123,
+			Arg7: nil,
 			Arg8: "hello",
 			Arg9: []byte{0x12, 0x34},
 

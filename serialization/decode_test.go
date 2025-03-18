@@ -15,7 +15,7 @@ func TestUnmarshal(t *testing.T) {
 			Arg4: "",
 			Arg5: 0x19,
 			Arg6: 0x1548,
-			Arg7: 0x123,
+			Arg7: nil,
 			Arg8: "hello",
 			Arg9: []byte{0x12, 0x34},
 
@@ -45,10 +45,7 @@ func TestUnmarshal(t *testing.T) {
 		err = Unmarshal(data, &s2)
 		require.NoError(t, err)
 
-		// skipped fields
-		s1.Arg7 = 0
 		s1.unexported = 0
-
 		require.Equal(t, s1, s2)
 	})
 }

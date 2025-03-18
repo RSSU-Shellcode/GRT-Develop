@@ -8,7 +8,7 @@ type testStruct struct {
 	Arg4 string
 	Arg5 uint8
 	Arg6 uint16
-	Arg7 uintptr
+	Arg7 []uint16
 	Arg8 string
 	Arg9 []byte
 
