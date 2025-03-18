@@ -42,21 +42,38 @@ func Unmarshal(data []byte, v any) error {
 		}
 		descriptors = append(descriptors, desc)
 	}
+	// compare the number of the structure fields
 	numFields := value.NumField()
-	if numFields != len(descriptors) {
+	var actFields int
+	for i := 0; i < numFields; i++ {
+		if !value.Type().Field(i).IsExported() {
+			continue
+		}
+		actFields++
+	}
+	if actFields != len(descriptors) {
 		return fmt.Errorf("invalid number of struct fields: %d", value.NumField())
 	}
 	// process the structure value
 	for i := 0; i < numFields; i++ {
+		if !value.Type().Field(i).IsExported() {
+			continue
+		}
 		field := value.Field(i)
 		desc := descriptors[i]
 		flag := desc & maskFlag
 		size := desc & maskLength
 		switch flag {
 		case flagValue:
-
+			err := decodeValue(reader, field, size)
+			if err != nil {
+				return fmt.Errorf("failed to decode value: %s", err)
+			}
 		case flagPointer:
-
+			err := decodePointer(reader, field, size)
+			if err != nil {
+				return fmt.Errorf("failed to decode pointer: %s", err)
+			}
 		default:
 			return fmt.Errorf("invalid descriptor: 0x%x", desc)
 		}
@@ -64,19 +81,24 @@ func Unmarshal(data []byte, v any) error {
 	return nil
 }
 
-func decodeValue(field reflect.Value, reader *bytes.Reader) error {
+//gocyclo:ignore
+func decodeValue(reader *bytes.Reader, value reflect.Value, size uint32) error {
+	typ := value.Type()
+	if uint32(typ.Size()) != size {
+		return fmt.Errorf("invalid size: %d", size)
+	}
 	var (
 		buf []byte
 		err error
 	)
-	switch field.Type().Kind() {
+	switch typ.Kind() {
 	case reflect.Int8:
 		buf = make([]byte, 1)
 		_, err = io.ReadFull(reader, buf)
 		if err != nil {
 			return err
 		}
-		field.SetInt(int64(buf[0]))
+		value.SetInt(int64(buf[0]))
 	case reflect.Int16:
 		buf = make([]byte, 2)
 		_, err = io.ReadFull(reader, buf)
@@ -84,7 +106,7 @@ func decodeValue(field reflect.Value, reader *bytes.Reader) error {
 			return err
 		}
 		val := binary.LittleEndian.Uint16(buf)
-		field.SetInt(int64(val))
+		value.SetInt(int64(val))
 	case reflect.Int32:
 		buf = make([]byte, 4)
 		_, err = io.ReadFull(reader, buf)
@@ -92,7 +114,7 @@ func decodeValue(field reflect.Value, reader *bytes.Reader) error {
 			return err
 		}
 		val := binary.LittleEndian.Uint32(buf)
-		field.SetInt(int64(val))
+		value.SetInt(int64(val))
 	case reflect.Int64:
 		buf = make([]byte, 8)
 		_, err = io.ReadFull(reader, buf)
@@ -100,49 +122,126 @@ func decodeValue(field reflect.Value, reader *bytes.Reader) error {
 			return err
 		}
 		val := binary.LittleEndian.Uint64(buf)
-		field.SetInt(int64(val))
+		value.SetInt(int64(val)) // #nosec G115
 	case reflect.Uint8:
 		buf = make([]byte, 1)
 		_, err = io.ReadFull(reader, buf)
 		if err != nil {
 			return err
 		}
-		field.SetUint(uint64(buf[0]))
+		value.SetUint(uint64(buf[0]))
 	case reflect.Uint16:
-		desc = flagValue | 2
 		buf = make([]byte, 2)
-		binary.LittleEndian.PutUint16(buf, uint16(field.Uint())) // #nosec G115
-	case reflect.Uint32:
-		desc = flagValue | 4
-		buf = make([]byte, 4)
-		binary.LittleEndian.PutUint32(buf, uint32(field.Uint())) // #nosec G115
-	case reflect.Uint64:
-		desc = flagValue | 8
-		buf = make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, field.Uint())
-	case reflect.Float32:
-		desc = flagValue | 4
-		buf = make([]byte, 4)
-		f := float32(field.Float())
-		n := *(*uint32)(unsafe.Pointer(&f)) // #nosec
-		binary.LittleEndian.PutUint32(buf, n)
-	case reflect.Float64:
-		desc = flagValue | 8
-		buf = make([]byte, 8)
-		f := field.Float()
-		n := *(*uint64)(unsafe.Pointer(&f)) // #nosec
-		binary.LittleEndian.PutUint64(buf, n)
-	case reflect.Bool:
-		desc = flagValue | 1
-		buf = make([]byte, 1)
-		if field.Bool() {
-			buf[0] = 1
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
 		}
+		val := binary.LittleEndian.Uint16(buf)
+		value.SetUint(uint64(val))
+	case reflect.Uint32:
+		buf = make([]byte, 4)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		val := binary.LittleEndian.Uint32(buf)
+		value.SetUint(uint64(val))
+	case reflect.Uint64:
+		buf = make([]byte, 8)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		val := binary.LittleEndian.Uint64(buf)
+		value.SetUint(val)
+	case reflect.Float32:
+		buf = make([]byte, 4)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		val := binary.LittleEndian.Uint32(buf)
+		n := *(*float32)(unsafe.Pointer(&val)) // #nosec
+		value.SetFloat(float64(n))
+	case reflect.Float64:
+		buf = make([]byte, 8)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		val := binary.LittleEndian.Uint64(buf)
+		n := *(*float64)(unsafe.Pointer(&val)) // #nosec
+		value.SetFloat(n)
+	case reflect.Bool:
+		buf = make([]byte, 1)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		value.SetBool(buf[0] == 1)
+	default:
+		return fmt.Errorf("type of %s is not support", value.Kind())
+	}
+	return nil
+}
+
+func decodePointer(reader *bytes.Reader, field reflect.Value, size uint32) error {
+	if size == 0 {
+		return nil
+	}
+	var (
+		buf []byte
+		err error
+	)
+	switch field.Type().Kind() {
+	case reflect.Uintptr:
+	case reflect.String:
+		buf = make([]byte, size)
+		_, err = io.ReadFull(reader, buf)
+		if err != nil {
+			return err
+		}
+		s, err := utf16ToString(buf)
+		if err != nil {
+			return err
+		}
+		field.SetString(s)
+	case reflect.Array:
+		t := field.Type().Elem()
+		s := uint32(t.Size())
+		if size%s != 0 {
+			return fmt.Errorf("invalid array element type: %s", t.Name())
+		}
+		l := int(size / s)
+		array := reflect.New(reflect.ArrayOf(l, t)).Elem()
+		for i := 0; i < l; i++ {
+			elem := reflect.New(t).Elem()
+			err = decodeValue(reader, elem, s)
+			if err != nil {
+				return err
+			}
+			array.Index(i).Set(elem)
+		}
+		field.Set(array)
+	case reflect.Slice:
+		t := field.Type().Elem()
+		s := uint32(t.Size())
+		if size%s != 0 {
+			return fmt.Errorf("invalid slice element type: %s", t.Name())
+		}
+		l := int(size / s)
+		slice := reflect.MakeSlice(reflect.SliceOf(t), l, l)
+		for i := 0; i < l; i++ {
+			elem := reflect.New(t).Elem()
+			err = decodeValue(reader, elem, s)
+			if err != nil {
+				return err
+			}
+			slice.Index(i).Set(elem)
+		}
+		field.Set(slice)
 	default:
 		return fmt.Errorf("field type of %s is not support", field.Kind())
 	}
-}
-
-func decodePointer(field reflect.Value, reader *bytes.Reader) error {
 	return nil
 }
