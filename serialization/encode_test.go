@@ -10,32 +10,34 @@ import (
 func TestMarshal(t *testing.T) {
 	t.Run("common", func(t *testing.T) {
 		s1 := testStruct{
-			arg1: 123,
-			arg2: [2]uint32{456, 789},
-			arg3: nil,
-			arg4: "",
-			arg5: 0x19,
-			arg6: 0x1548,
-			arg7: 0x123,
-			arg8: "hello",
-			arg9: []byte{0x12, 0x34},
+			Arg1: 123,
+			Arg2: [2]uint32{456, 789},
+			Arg3: nil,
+			Arg4: "",
+			Arg5: 0x19,
+			Arg6: 0x1548,
+			Arg7: 0x123,
+			Arg8: "hello",
+			Arg9: []byte{0x12, 0x34},
 
-			arg10: 0x12,
-			arg11: 0x1234,
-			arg12: -0x12345678,
-			arg13: -0x1234567812345678,
-			arg14: 0x12,
-			arg15: 0x1234,
-			arg16: 0x12345678,
-			arg17: 0x1234567812345678,
-			arg18: 0.1234,
-			arg19: 0.123459664,
-			arg20: true,
+			Arg10: 0x12,
+			Arg11: 0x1234,
+			Arg12: -0x12345678,
+			Arg13: -0x1234567812345678,
+			Arg14: 0x12,
+			Arg15: 0x1234,
+			Arg16: 0x12345678,
+			Arg17: 0x1234567812345678,
+			Arg18: 0.1234,
+			Arg19: 0.123459664,
+			Arg20: true,
 
-			arg26: [2]uint16{0x1234, 0x5678},
-			arg37: []uint16{0x5678, 0x1234},
+			Arg26: [2]uint16{0x1234, 0x5678},
+			Arg37: []uint16{0x5678, 0x1234},
 
-			arg42: []bool{true, false},
+			Arg42: []bool{true, false},
+
+			unexported: 123,
 		}
 		data, err := Marshal(&s1)
 		require.NoError(t, err)
@@ -104,7 +106,7 @@ func TestMarshal(t *testing.T) {
 
 	t.Run("invalid field type", func(t *testing.T) {
 		s := struct {
-			arg1 chan int
+			Arg1 chan int
 		}{}
 		data, err := Marshal(&s)
 		require.EqualError(t, err, "field type of chan is not support")
@@ -113,7 +115,7 @@ func TestMarshal(t *testing.T) {
 
 	t.Run("invalid array element type", func(t *testing.T) {
 		s := struct {
-			arg1 [2]chan int
+			Arg1 [2]chan int
 		}{}
 		data, err := Marshal(&s)
 		require.EqualError(t, err, "element type of chan is not support")
@@ -122,9 +124,9 @@ func TestMarshal(t *testing.T) {
 
 	t.Run("invalid slice element type", func(t *testing.T) {
 		s := struct {
-			arg1 []chan int
+			Arg1 []chan int
 		}{
-			arg1: make([]chan int, 1),
+			Arg1: make([]chan int, 1),
 		}
 		data, err := Marshal(&s)
 		require.EqualError(t, err, "element type of chan is not support")
