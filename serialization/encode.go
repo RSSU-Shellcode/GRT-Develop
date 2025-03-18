@@ -25,10 +25,13 @@ func Marshal(v any) ([]byte, error) {
 	// generate descriptors and data
 	var (
 		descriptors []uint32
-		dataList    [][]byte
+		dataBlock   []byte
 	)
 	num := value.NumField()
 	for i := 0; i < num; i++ {
+		if !value.Type().Field(i).IsExported() {
+			continue
+		}
 		var (
 			desc uint32
 			data []byte
@@ -80,14 +83,14 @@ func Marshal(v any) ([]byte, error) {
 			f := field.Float()
 			n := *(*uint64)(unsafe.Pointer(&f)) // #nosec
 			binary.LittleEndian.PutUint64(data, n)
-		case reflect.Uintptr:
-			desc = flagPointer
 		case reflect.Bool:
 			desc = flagValue | 1
 			data = make([]byte, 1)
 			if field.Bool() {
 				data[0] = 1
 			}
+		case reflect.Uintptr:
+			desc = flagPointer
 		case reflect.String:
 			data = stringToUTF16(field.String())
 			desc = flagPointer | uint32(len(data)) // #nosec G115
@@ -107,7 +110,7 @@ func Marshal(v any) ([]byte, error) {
 			return nil, fmt.Errorf("field type of %s is not support", field.Kind())
 		}
 		descriptors = append(descriptors, desc)
-		dataList = append(dataList, data)
+		dataBlock = append(dataBlock, data...)
 	}
 	descriptors = append(descriptors, itemEnd)
 	// write magic number
@@ -121,9 +124,7 @@ func Marshal(v any) ([]byte, error) {
 		buffer = append(buffer, buf...)
 	}
 	// write raw data
-	for _, data := range dataList {
-		buffer = append(buffer, data...)
-	}
+	buffer = append(buffer, dataBlock...)
 	return buffer, nil
 }
 
