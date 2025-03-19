@@ -42,9 +42,6 @@ func stringToUTF16(s string) []byte {
 
 func utf16ToString(b []byte) (string, error) {
 	n := len(b)
-	if n == 0 {
-		return "", nil
-	}
 	n -= 2 // remove last character
 	if n%2 != 0 {
 		return "", errors.New("invalid utf16 string")
