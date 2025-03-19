@@ -133,6 +133,114 @@ func TestUnmarshal(t *testing.T) {
 		}{}
 
 		err := Unmarshal(data, &s)
-		require.EqualError(t, err, "failed to decode value: type of struct is not support")
+		errStr := "failed to decode value: type of struct is not support"
+		require.EqualError(t, err, errStr)
+	})
+
+	t.Run("invalid string size", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x04, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+		}
+		s := struct {
+			Arg1 string
+		}{}
+
+		err := Unmarshal(data, &s)
+		require.EqualError(t, err, "failed to decode pointer: EOF")
+	})
+
+	t.Run("invalid string data", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x03, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x12, 0x12, 0x12,
+		}
+		s := struct {
+			Arg1 string
+		}{}
+
+		err := Unmarshal(data, &s)
+		require.EqualError(t, err, "failed to decode pointer: invalid utf16 string")
+	})
+
+	t.Run("invalid array element type", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x03, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x12, 0x12, 0x12,
+		}
+		s := struct {
+			Arg1 [2]uint16
+		}{}
+
+		err := Unmarshal(data, &s)
+		errStr := "failed to decode pointer: invalid array element type: uint16"
+		require.EqualError(t, err, errStr)
+	})
+
+	t.Run("invalid array data", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x04, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x12, 0x12, 0x12,
+		}
+		s := struct {
+			Arg1 [2]uint16
+		}{}
+
+		err := Unmarshal(data, &s)
+		require.EqualError(t, err, "failed to decode pointer: unexpected EOF")
+	})
+
+	t.Run("invalid slice element type", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x03, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x12, 0x12, 0x12,
+		}
+		s := struct {
+			Arg1 []uint16
+		}{}
+
+		err := Unmarshal(data, &s)
+		errStr := "failed to decode pointer: invalid slice element type: uint16"
+		require.EqualError(t, err, errStr)
+	})
+
+	t.Run("invalid slice data", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x04, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x12, 0x12, 0x12,
+		}
+		s := struct {
+			Arg1 []uint16
+		}{}
+
+		err := Unmarshal(data, &s)
+		require.EqualError(t, err, "failed to decode pointer: unexpected EOF")
+	})
+
+	t.Run("invalid pointer type", func(t *testing.T) {
+		data := []byte{
+			0xFF, 0xFF, 0xFF, 0xFF,
+			0x02, 0x00, 0x00, 0x80,
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00,
+		}
+		s := struct {
+			Arg1 uint16
+		}{}
+
+		err := Unmarshal(data, &s)
+		errStr := "failed to decode pointer: field type of uint16 is not support"
+		require.EqualError(t, err, errStr)
 	})
 }
