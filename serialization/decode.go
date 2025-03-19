@@ -20,10 +20,10 @@ func Unmarshal(data []byte, v any) error {
 	if value.Kind() != reflect.Struct {
 		return errors.New("value must be a pointer to struct")
 	}
-	if len(data) < 8 {
+	if len(data) < 4 {
 		return errors.New("invalid data length")
 	}
-	magic := binary.LittleEndian.Uint32(data[0:4])
+	magic := binary.LittleEndian.Uint32(data)
 	if magic != headerMagic {
 		return errors.New("invalid magic number")
 	}
@@ -74,8 +74,6 @@ func Unmarshal(data []byte, v any) error {
 			if err != nil {
 				return fmt.Errorf("failed to decode pointer: %s", err)
 			}
-		default:
-			return fmt.Errorf("invalid descriptor: 0x%x", desc)
 		}
 	}
 	return nil
@@ -87,97 +85,43 @@ func decodeValue(reader *bytes.Reader, value reflect.Value, size uint32) error {
 	if uint32(typ.Size()) != size {
 		return fmt.Errorf("invalid size: %d", size)
 	}
-	var (
-		buf []byte
-		err error
-	)
+	buf := make([]byte, size)
+	_, err := io.ReadFull(reader, buf)
+	if err != nil {
+		return err
+	}
 	switch typ.Kind() {
 	case reflect.Int8:
-		buf = make([]byte, 1)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		value.SetInt(int64(buf[0]))
 	case reflect.Int16:
-		buf = make([]byte, 2)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint16(buf)
 		value.SetInt(int64(val))
 	case reflect.Int32:
-		buf = make([]byte, 4)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint32(buf)
 		value.SetInt(int64(val))
 	case reflect.Int64:
-		buf = make([]byte, 8)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint64(buf)
 		value.SetInt(int64(val)) // #nosec G115
 	case reflect.Uint8:
-		buf = make([]byte, 1)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		value.SetUint(uint64(buf[0]))
 	case reflect.Uint16:
-		buf = make([]byte, 2)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint16(buf)
 		value.SetUint(uint64(val))
 	case reflect.Uint32:
-		buf = make([]byte, 4)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint32(buf)
 		value.SetUint(uint64(val))
 	case reflect.Uint64:
-		buf = make([]byte, 8)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint64(buf)
 		value.SetUint(val)
 	case reflect.Float32:
-		buf = make([]byte, 4)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint32(buf)
 		n := *(*float32)(unsafe.Pointer(&val)) // #nosec
 		value.SetFloat(float64(n))
 	case reflect.Float64:
-		buf = make([]byte, 8)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		val := binary.LittleEndian.Uint64(buf)
 		n := *(*float64)(unsafe.Pointer(&val)) // #nosec
 		value.SetFloat(n)
 	case reflect.Bool:
-		buf = make([]byte, 1)
-		_, err = io.ReadFull(reader, buf)
-		if err != nil {
-			return err
-		}
 		value.SetBool(buf[0] == 1)
 	default:
 		return fmt.Errorf("type of %s is not support", value.Kind())
