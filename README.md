@@ -1,7 +1,7 @@
 # GRT-Config
-A package for configure Gleam-RT options and Encode/Decode argument stub. 
+A package for deep customization of Gleam-RT. 
 
-## Usage
+## option and argument
 ```go
 package main
 
