@@ -14,6 +14,7 @@ import (
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/alg-id
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/rsa-schannel-key-blobs
 
+//nolint:unused
 type blobHeader struct {
 	bType    byte
 	bVersion byte
@@ -21,18 +22,21 @@ type blobHeader struct {
 	aiKeyAlg uint32
 }
 
+//nolint:unused
 type rsaPubKey struct {
 	magic  uint32
 	bitLen uint32
 	pubExp uint32
 }
 
+//nolint:unused
 type rsaPublicKey struct {
 	header    blobHeader
 	rsaPubKey rsaPubKey
 	modulus   []byte
 }
 
+//nolint:unused
 type rsaPrivateKey struct {
 	header      blobHeader
 	rsaPubKey   rsaPubKey
@@ -97,9 +101,9 @@ func ParseRSAPublicKey(der []byte) (*rsa.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch key.(type) {
+	switch k := key.(type) {
 	case *rsa.PublicKey:
-		return key.(*rsa.PublicKey), nil
+		return k, nil
 	default:
 		return nil, errors.New("invalid public key type")
 	}
@@ -115,9 +119,9 @@ func ParseRSAPrivateKey(der []byte) (*rsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	switch key8.(type) {
+	switch k := key8.(type) {
 	case *rsa.PrivateKey:
-		return key8.(*rsa.PrivateKey), nil
+		return k, nil
 	default:
 		return nil, errors.New("invalid private key type")
 	}
@@ -141,9 +145,9 @@ func ExportRSAPublicKeyBlob(key *rsa.PublicKey, usage int) ([]byte, error) {
 	buffer.Write([]byte{0x00, 0x00}) // reserved
 	_ = binary.Write(buffer, binary.LittleEndian, ku)
 	// write rsaPubKey
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(magicRSA1))
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.Size()*8))
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.E))
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(magicRSA1))    // #nosec G115
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.Size()*8)) // #nosec G115
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.E))        // #nosec G115
 	// write modulus
 	buf := make([]byte, key.Size())
 	buf = key.N.FillBytes(buf)
@@ -169,9 +173,9 @@ func ExportRSAPrivateKeyBlob(key *rsa.PrivateKey, usage int) ([]byte, error) {
 	buffer.Write([]byte{0x00, 0x00}) // reserved
 	_ = binary.Write(buffer, binary.LittleEndian, ku)
 	// write rsaPubKey
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(magicRSA2))
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.Size()*8))
-	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.E))
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(magicRSA2))    // #nosec G115
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.Size()*8)) // #nosec G115
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.E))        // #nosec G115
 	// prepare function for encode big int with little endian
 	writeBigInt := func(i *big.Int, len int) {
 		buf := make([]byte, len)
