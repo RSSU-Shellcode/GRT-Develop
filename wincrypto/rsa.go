@@ -1,8 +1,10 @@
 package wincrypto
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/binary"
 	"encoding/pem"
 	"errors"
 )
@@ -11,28 +13,28 @@ import (
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/alg-id
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/rsa-schannel-key-blobs
 
-type BlobHeader struct {
+type blobHeader struct {
 	bType    byte
 	bVersion byte
 	reserved uint16
 	aiKeyAlg uint32
 }
 
-type RSAPubKey struct {
+type rsaPubKey struct {
 	magic  uint32
 	bitLen uint32
 	pubExp uint32
 }
 
-type RSAPublicKey struct {
-	header    BlobHeader
-	rsaPubKey RSAPubKey
+type rsaPublicKey struct {
+	header    blobHeader
+	rsaPubKey rsaPubKey
 	modulus   []byte
 }
 
-type RSAPrivateKey struct {
-	header      BlobHeader
-	rsaPubKey   RSAPubKey
+type rsaPrivateKey struct {
+	header      blobHeader
+	rsaPubKey   rsaPubKey
 	modulus     []byte
 	prime1      []byte
 	prime2      []byte
@@ -41,6 +43,30 @@ type RSAPrivateKey struct {
 	coefficient []byte
 	priExponent []byte
 }
+
+var (
+	_ rsaPublicKey
+	_ rsaPrivateKey
+)
+
+const (
+	curBlobVersion = 0x02
+
+	cAlgRSASign = 0x00002400
+	cAlgRSAKeyX = 0x0000A400
+
+	publicKeyBlob  = 0x06
+	privateKeyBlob = 0x07
+
+	magicRSA1 = 0x31415352
+	magicRSA2 = 0x32415352
+)
+
+// about RSA key usage.
+const (
+	RSAKeyUsageSIGN = 1
+	RSAKeyUsageKEYX = 2
+)
 
 // ParseRSAPrivateKeyPEM is used to load rsa private key from PEM block.
 func ParseRSAPrivateKeyPEM(data []byte) (*rsa.PrivateKey, error) {
@@ -97,11 +123,49 @@ func ParseRSAPublicKey(der []byte) (*rsa.PublicKey, error) {
 }
 
 // ExportRSAPrivateKeyBlob is used to export rsa private key with PrivateKeyBlob.
-func ExportRSAPrivateKeyBlob(key *rsa.PrivateKey) []byte {
-	return nil
+func ExportRSAPrivateKeyBlob(key *rsa.PrivateKey, usage int) ([]byte, error) {
+	switch usage {
+	case RSAKeyUsageSIGN:
+	case RSAKeyUsageKEYX:
+	default:
+		return nil, errors.New("invalid rsa key usage")
+	}
+	return nil, nil
 }
 
 // ExportRSAPublicKeyBlob is used to export rsa public key with PublicKeyBlob.
-func ExportRSAPublicKeyBlob(key *rsa.PublicKey) []byte {
-	return nil
+func ExportRSAPublicKeyBlob(key *rsa.PublicKey, usage int) ([]byte, error) {
+	var ku uint32
+	switch usage {
+	case RSAKeyUsageSIGN:
+		ku = cAlgRSASign
+	case RSAKeyUsageKEYX:
+		ku = cAlgRSAKeyX
+	default:
+		return nil, errors.New("invalid rsa key usage")
+	}
+	buffer := bytes.NewBuffer(make([]byte, 0, key.Size()*4))
+	// write blob header
+	buffer.WriteByte(publicKeyBlob)
+	buffer.WriteByte(curBlobVersion)
+	buffer.Write([]byte{0x00, 0x00}) // reserved
+	_ = binary.Write(buffer, binary.LittleEndian, ku)
+	// write rsaPubKey
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(magicRSA1))
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.Size()*8))
+	_ = binary.Write(buffer, binary.LittleEndian, uint32(key.E))
+	// write modulus
+	buf := make([]byte, key.Size())
+	buf = key.N.FillBytes(buf)
+	buffer.Write(reverseBytes(buf))
+	return buffer.Bytes(), nil
+}
+
+func reverseBytes(b []byte) []byte {
+	n := len(b)
+	r := make([]byte, n)
+	for i := 0; i < n; i++ {
+		r[i] = b[n-1-i]
+	}
+	return r
 }
