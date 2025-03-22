@@ -42,20 +42,9 @@ func Unmarshal(data []byte, v any) error {
 		}
 		descriptors = append(descriptors, desc)
 	}
-	// compare the number of the structure fields
-	numFields := value.NumField()
-	var actFields int
-	for i := 0; i < numFields; i++ {
-		if !value.Type().Field(i).IsExported() {
-			continue
-		}
-		actFields++
-	}
-	if actFields != len(descriptors) {
-		return fmt.Errorf("invalid number of struct fields: %d", value.NumField())
-	}
 	// process the structure value
-	for i := 0; i < numFields; i++ {
+	num := value.NumField()
+	for i := 0; i < num; i++ {
 		if !value.Type().Field(i).IsExported() {
 			continue
 		}

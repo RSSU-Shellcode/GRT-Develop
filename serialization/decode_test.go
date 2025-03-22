@@ -82,15 +82,6 @@ func TestUnmarshal(t *testing.T) {
 		require.EqualError(t, err, "unexpected EOF")
 	})
 
-	t.Run("invalid structure field", func(t *testing.T) {
-		data := make([]byte, 8)
-		binary.LittleEndian.PutUint32(data, headerMagic)
-
-		var s1 testStruct
-		err := Unmarshal(data, &s1)
-		require.EqualError(t, err, "invalid number of struct fields: 43")
-	})
-
 	t.Run("invalid value size", func(t *testing.T) {
 		data := []byte{
 			0xFF, 0xFF, 0xFF, 0xFF,
