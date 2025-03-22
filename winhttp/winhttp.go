@@ -13,12 +13,12 @@ type Request struct {
 	ReceiveTimeout uint32 // milliseconds, default is 600s
 	MaxBodySize    uint32 // zero is no limit
 	AccessType     uint8  // reference document about WinHttpOpen
-	Body           any    // skip this field value
+	Body           []byte // skip this field value
 }
 
 // Response is the defined HTTP response in win_http.h.
 type Response struct {
 	StatusCode int32  // example 200, 404
 	Headers    string // split by "\r\n"
-	Body       any    // skip this field value
+	Body       []byte // skip this field value
 }
