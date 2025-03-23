@@ -47,6 +47,12 @@ func AESEncrypt(data, key []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate aes iv: %s", err)
 	}
+	// copy plain data and padding data
+	copy(output[AESIVSize:], data)
+	padding := byte(paddingSize)
+	for i := 0; i < paddingSize; i++ {
+		output[AESIVSize+l+i] = padding
+	}
 	// encrypt plain data
 	encrypter := cipher.NewCBCEncrypter(block, iv) // #nosec G407
 	encrypter.CryptBlocks(output[AESIVSize:], output[AESIVSize:])
