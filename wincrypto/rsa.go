@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -68,6 +69,116 @@ func ParseRSAPrivateKey(der []byte) (*rsa.PrivateKey, error) {
 	default:
 		return nil, errors.New("invalid private key type")
 	}
+}
+
+// ImportRSAPublicKeyBlob is used to import rsa public key with PublicKeyBlob.
+func ImportRSAPublicKeyBlob(data []byte) (*rsa.PublicKey, error) {
+	reader := bytes.NewReader(data)
+	var bh blobHeader
+	err := binary.Read(reader, binary.LittleEndian, &bh)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read blob header: %s", err)
+	}
+	if bh.Type != publicKeyBlob {
+		return nil, errors.New("invalid blob type")
+	}
+	if bh.Version != curBlobVersion {
+		return nil, errors.New("invalid blob version")
+	}
+	var rp rsaPubKey
+	err = binary.Read(reader, binary.LittleEndian, &rp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read blob public key: %s", err)
+	}
+	if rp.Magic != magicRSA1 {
+		return nil, errors.New("invalid blob magic")
+	}
+	if rp.BitLen%8 != 0 {
+		return nil, errors.New("invalid blob bit length")
+	}
+	modulus := make([]byte, rp.BitLen/8)
+	err = binary.Read(reader, binary.LittleEndian, modulus)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read modulus: %s", err)
+	}
+	publicKey := rsa.PublicKey{
+		N: big.NewInt(0).SetBytes(reverseBytes(modulus)),
+		E: int(rp.PubExp),
+	}
+	return &publicKey, nil
+}
+
+// ImportRSAPrivateKeyBlob is used to import rsa private key with PrivateKeyBlob.
+func ImportRSAPrivateKeyBlob(data []byte) (*rsa.PrivateKey, error) {
+	reader := bytes.NewReader(data)
+	var bh blobHeader
+	err := binary.Read(reader, binary.LittleEndian, &bh)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read blob header: %s", err)
+	}
+	if bh.Type != privateKeyBlob {
+		return nil, errors.New("invalid blob type")
+	}
+	if bh.Version != curBlobVersion {
+		return nil, errors.New("invalid blob version")
+	}
+	var rp rsaPubKey
+	err = binary.Read(reader, binary.LittleEndian, &rp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read blob private key: %s", err)
+	}
+	if rp.Magic != magicRSA2 {
+		return nil, errors.New("invalid blob magic")
+	}
+	if rp.BitLen%8 != 0 {
+		return nil, errors.New("invalid blob bit length")
+	}
+	modulus := make([]byte, rp.BitLen/8)
+	err = binary.Read(reader, binary.LittleEndian, modulus)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read modulus: %s", err)
+	}
+	publicKey := rsa.PublicKey{
+		N: big.NewInt(0).SetBytes(reverseBytes(modulus)),
+		E: int(rp.PubExp),
+	}
+	// read primes
+	p1b := make([]byte, rp.BitLen/16)
+	err = binary.Read(reader, binary.LittleEndian, p1b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read prime1: %s", err)
+	}
+	p1 := big.NewInt(0).SetBytes(reverseBytes(p1b))
+	p2b := make([]byte, rp.BitLen/16)
+	err = binary.Read(reader, binary.LittleEndian, p2b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read prime2: %s", err)
+	}
+	p2 := big.NewInt(0).SetBytes(reverseBytes(p2b))
+	// skip exponents and coefficient
+	skipped := make([]byte, rp.BitLen/16*3)
+	err = binary.Read(reader, binary.LittleEndian, skipped)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read skipped fields: %s", err)
+	}
+	// read private exponent
+	db := make([]byte, rp.BitLen/8)
+	err = binary.Read(reader, binary.LittleEndian, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read private exponent: %s", err)
+	}
+	d := big.NewInt(0).SetBytes(reverseBytes(db))
+	privateKey := rsa.PrivateKey{
+		PublicKey: publicKey,
+		D:         d,
+		Primes:    []*big.Int{p1, p2},
+	}
+	err = privateKey.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate private key: %s", err)
+	}
+	privateKey.Precompute()
+	return &privateKey, nil
 }
 
 // ExportRSAPublicKeyBlob is used to export rsa public key with PublicKeyBlob.
