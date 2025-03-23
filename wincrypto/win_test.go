@@ -1,6 +1,11 @@
 package wincrypto
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"os"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -44,7 +49,20 @@ func TestWinAES(t *testing.T) {
 
 func TestWinRSA(t *testing.T) {
 	t.Run("sign", func(t *testing.T) {
+		key, err := os.ReadFile("testdata/privatekey.sign")
+		require.NoError(t, err)
 
+		privateKey, err := ImportRSAPrivateKeyBlob(key)
+		require.NoError(t, err)
+
+		message := []byte{1, 2, 3, 4}
+		digest := sha256.Sum256(message)
+
+		signature, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, digest[:])
+		require.NoError(t, err)
+
+		// this output will move to the test of Gleam-RT
+		spew.Dump(signature)
 	})
 
 	t.Run("verify", func(t *testing.T) {
