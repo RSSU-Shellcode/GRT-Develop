@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"os"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
@@ -113,6 +114,28 @@ func TestParseRSAPrivateKey(t *testing.T) {
 		pri, err := ParseRSAPrivateKey(data)
 		require.EqualError(t, err, "invalid private key type")
 		require.Nil(t, pri)
+	})
+}
+
+func TestImportRSAPublicKeyBlob(t *testing.T) {
+	t.Run("common", func(t *testing.T) {
+		key, err := os.ReadFile("testdata/public.key")
+		require.NoError(t, err)
+
+		publicKey, err := ImportRSAPublicKeyBlob(key)
+		require.NoError(t, err)
+		require.NotNil(t, publicKey)
+	})
+}
+
+func TestImportRSAPrivateKeyBlob(t *testing.T) {
+	t.Run("common", func(t *testing.T) {
+		key, err := os.ReadFile("testdata/private.key")
+		require.NoError(t, err)
+
+		privateKey, err := ImportRSAPrivateKeyBlob(key)
+		require.NoError(t, err)
+		require.NotNil(t, privateKey)
 	})
 }
 
