@@ -6,17 +6,17 @@ package wincrypto
 
 //nolint:unused
 type blobHeader struct {
-	bType    byte
-	bVersion byte
-	reserved uint16
-	aiKeyAlg uint32
+	Type     byte
+	Version  byte
+	Reserved uint16
+	AiKeyAlg uint32
 }
 
 //nolint:unused
 type rsaPubKey struct {
-	magic  uint32
-	bitLen uint32
-	pubExp uint32
+	Magic  uint32
+	BitLen uint32
+	PubExp uint32
 }
 
 //nolint:unused
