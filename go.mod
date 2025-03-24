@@ -1,4 +1,4 @@
-module github.com/RSSU-Shellcode/GRT-Config
+module github.com/RSSU-Shellcode/GRT-Develop
 
 go 1.20
 
