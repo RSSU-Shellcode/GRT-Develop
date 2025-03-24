@@ -1,10 +1,12 @@
 package wincrypto
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/binary"
 	"encoding/pem"
 	"os"
 	"testing"
@@ -125,6 +127,107 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		publicKey, err := ImportRSAPublicKeyBlob(key)
 		require.NoError(t, err)
 		require.NotNil(t, publicKey)
+	})
+
+	t.Run("invalid blob header", func(t *testing.T) {
+		publicKey, err := ImportRSAPublicKeyBlob(nil)
+		require.EqualError(t, err, "failed to read blob header: EOF")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("invalid blob type", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob type")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("invalid blob version", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  1,
+			AiKeyAlg: 0x0000A400,
+		})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob version")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("failed to read blob public key", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, uint32(magicRSA1))
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read blob public key: unexpected EOF")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("invalid blob magic", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  0x12345678,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob magic")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("invalid blob bit length", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA1,
+			BitLen: 2047,
+			PubExp: 65537,
+		})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob bit length")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("failed to read modulus", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA1,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x01})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read modulus: unexpected EOF")
+		require.Nil(t, publicKey)
 	})
 }
 
