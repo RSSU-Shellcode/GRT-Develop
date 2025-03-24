@@ -183,7 +183,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 			AiKeyAlg: 0x0000A400,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
-			Magic:  0x12345678,
+			Magic:  magicRSA2,
 			BitLen: 2048,
 			PubExp: 65537,
 		})
@@ -239,6 +239,216 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		privateKey, err := ImportRSAPrivateKeyBlob(key)
 		require.NoError(t, err)
 		require.NotNil(t, privateKey)
+	})
+
+	t.Run("invalid blob header", func(t *testing.T) {
+		privateKey, err := ImportRSAPrivateKeyBlob(nil)
+		require.EqualError(t, err, "failed to read blob header: EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid blob type", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob type")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid blob version", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  1,
+			AiKeyAlg: 0x0000A400,
+		})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob version")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read blob public key", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, uint32(magicRSA1))
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read blob private key: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid blob magic", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA1,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob magic")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid blob bit length", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2047,
+			PubExp: 65537,
+		})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid blob bit length")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read modulus", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x01})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read modulus: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read prime1", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x01}, 256))
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x02})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read prime1: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read prime2", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x01}, 256))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x02}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x03})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read prime2: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read skipped fields", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x01}, 256))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x02}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x03}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x00})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read skipped fields: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("failed to read private exponent", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x01}, 256))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x02}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x03}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x00}, 128*3))
+		_ = binary.Write(buf, binary.LittleEndian, []byte{0x04})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "failed to read private exponent: unexpected EOF")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid private key validation", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 0x0000A400,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
+			Magic:  magicRSA2,
+			BitLen: 2048,
+			PubExp: 65537,
+		})
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x01}, 256))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x02}, 128))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x02}, 128)) // same as prime1
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x00}, 128*3))
+		_ = binary.Write(buf, binary.LittleEndian, bytes.Repeat([]byte{0x04}, 256))
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.ErrorContains(t, err, "failed to validate private key")
+		require.Nil(t, privateKey)
 	})
 }
 
