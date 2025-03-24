@@ -1,4 +1,4 @@
-# GRT-Config
+# GRT-Develop
 A package for deep customization of Gleam-RT. 
 
 ## option and argument
@@ -9,8 +9,8 @@ import (
     "fmt"
     "os"
 
-    "github.com/RSSU-Shellcode/GRT-Config/argument"
-    "github.com/RSSU-Shellcode/GRT-Config/option"
+    "github.com/RSSU-Shellcode/GRT-Develop/argument"
+    "github.com/RSSU-Shellcode/GRT-Develop/option"
 )
 
 func main() {
