@@ -85,6 +85,11 @@ func ImportRSAPublicKeyBlob(data []byte) (*rsa.PublicKey, error) {
 	if bh.Version != curBlobVersion {
 		return nil, errors.New("invalid blob version")
 	}
+	switch bh.AiKeyAlg {
+	case cAlgRSASign, cAlgRSAKeyX:
+	default:
+		return nil, errors.New("invalid public key algorithm")
+	}
 	var rp rsaPubKey
 	err = binary.Read(reader, binary.LittleEndian, &rp)
 	if err != nil {
@@ -121,6 +126,11 @@ func ImportRSAPrivateKeyBlob(data []byte) (*rsa.PrivateKey, error) {
 	}
 	if bh.Version != curBlobVersion {
 		return nil, errors.New("invalid blob version")
+	}
+	switch bh.AiKeyAlg {
+	case cAlgRSASign, cAlgRSAKeyX:
+	default:
+		return nil, errors.New("invalid private key algorithm")
 	}
 	var rp rsaPubKey
 	err = binary.Read(reader, binary.LittleEndian, &rp)
