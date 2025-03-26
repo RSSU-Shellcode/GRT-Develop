@@ -140,7 +140,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 
 		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
@@ -153,11 +153,24 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  1,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 
 		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
 		require.EqualError(t, err, "invalid blob version")
+		require.Nil(t, publicKey)
+	})
+
+	t.Run("invalid public key algorithm", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     publicKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 1,
+		})
+
+		publicKey, err := ImportRSAPublicKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid public key algorithm")
 		require.Nil(t, publicKey)
 	})
 
@@ -166,7 +179,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, uint32(magicRSA1))
 
@@ -180,7 +193,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -198,7 +211,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA1,
@@ -216,7 +229,7 @@ func TestImportRSAPublicKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA1,
@@ -252,7 +265,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     publicKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 
 		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
@@ -265,11 +278,24 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  1,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 
 		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
 		require.EqualError(t, err, "invalid blob version")
+		require.Nil(t, privateKey)
+	})
+
+	t.Run("invalid private key algorithm", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
+			Type:     privateKeyBlob,
+			Version:  curBlobVersion,
+			AiKeyAlg: 1,
+		})
+
+		privateKey, err := ImportRSAPrivateKeyBlob(buf.Bytes())
+		require.EqualError(t, err, "invalid private key algorithm")
 		require.Nil(t, privateKey)
 	})
 
@@ -278,7 +304,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, uint32(magicRSA1))
 
@@ -292,7 +318,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA1,
@@ -310,7 +336,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -328,7 +354,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -347,7 +373,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -367,7 +393,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -388,7 +414,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -410,7 +436,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
@@ -433,7 +459,7 @@ func TestImportRSAPrivateKeyBlob(t *testing.T) {
 		_ = binary.Write(buf, binary.LittleEndian, blobHeader{
 			Type:     privateKeyBlob,
 			Version:  curBlobVersion,
-			AiKeyAlg: 0x0000A400,
+			AiKeyAlg: cAlgRSASign,
 		})
 		_ = binary.Write(buf, binary.LittleEndian, rsaPubKey{
 			Magic:  magicRSA2,
