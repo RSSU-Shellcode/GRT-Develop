@@ -4,6 +4,24 @@ package wincrypto
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/alg-id
 // https://learn.microsoft.com/en-us/windows/win32/seccrypto/rsa-schannel-key-blobs
 
+const (
+	curBlobVersion = 0x02
+
+	cAlgRSASign = 0x00002400
+	cAlgRSAKeyX = 0x0000A400
+
+	publicKeyBlob  = 0x06
+	privateKeyBlob = 0x07
+
+	magicRSA1 = 0x31415352
+	magicRSA2 = 0x32415352
+)
+
+var (
+	_ rsaPublicKey
+	_ rsaPrivateKey
+)
+
 //nolint:unused
 type blobHeader struct {
 	Type     byte
@@ -38,21 +56,3 @@ type rsaPrivateKey struct {
 	coefficient []byte
 	priExponent []byte
 }
-
-var (
-	_ rsaPublicKey
-	_ rsaPrivateKey
-)
-
-const (
-	curBlobVersion = 0x02
-
-	cAlgRSASign = 0x00002400
-	cAlgRSAKeyX = 0x0000A400
-
-	publicKeyBlob  = 0x06
-	privateKeyBlob = 0x07
-
-	magicRSA1 = 0x31415352
-	magicRSA2 = 0x32415352
-)
