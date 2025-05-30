@@ -6,11 +6,11 @@ import (
 	"flag"
 )
 
-// +------------+---------+---------+
-// | magic mark | option1 | option2 |
-// +------------+---------+---------+
-// |    0xFC    |   var   |   var   |
-// +------------+---------+---------+
+// +------------+---------+---------+-----------+
+// | magic mark | option1 | option2 | option... |
+// +------------+---------+---------+-----------+
+// |    0xFC    |   var   |   var   |    var    |
+// +------------+---------+---------+-----------+
 
 const (
 	// StubSize is the option stub total size at the runtime tail.
@@ -22,21 +22,31 @@ const (
 
 // options offset of the option stub.
 const (
-	OptOffsetNotEraseInstruction   = 1
-	OptOffsetNotAdjustProtect      = 2
-	OptOffsetNotTrackCurrentThread = 3
+	OptOffsetDisableSysmon = iota + 1
+	OptOffsetDisableWatchdog
+	OptOffsetNotEraseInstruction
+	OptOffsetNotAdjustProtect
+	OptOffsetTrackCurrentThread
 )
 
 // Options contains options about Gleam-RT.
 type Options struct {
+	// disable sysmon for implement single thread model.
+	DisableSysmon bool `toml:"disable_sysmon" json:"disable_sysmon"`
+
+	// disable watchdog for implement single thread model.
+	// it will overwrite the control from upper module.
+	DisableWatchdog bool `toml:"disable_watchdog" json:"disable_watchdog"`
+
 	// not erase runtime instructions after call Runtime_M.Exit.
-	NotEraseInstruction bool
+	NotEraseInstruction bool `toml:"not_erase_instruction" json:"not_erase_instruction"`
 
 	// not adjust current memory page protect for erase runtime.
-	NotAdjustProtect bool
+	NotAdjustProtect bool `toml:"not_adjust_protect" json:"not_adjust_protect"`
 
 	// track current thread for test or debug mode.
-	TrackCurrentThread bool
+	// it maybe improved the single thread model.
+	TrackCurrentThread bool `toml:"track_current_thread" json:"track_current_thread"`
 }
 
 // Set is used to adjust options in the runtime shellcode template.
@@ -58,6 +68,18 @@ func Set(tpl []byte, opts *Options) ([]byte, error) {
 	copy(output, tpl)
 	stub = output[len(output)-StubSize:]
 	var opt byte
+	if opts.DisableSysmon {
+		opt = 1
+	} else {
+		opt = 0
+	}
+	stub[OptOffsetDisableSysmon] = opt
+	if opts.DisableWatchdog {
+		opt = 1
+	} else {
+		opt = 0
+	}
+	stub[OptOffsetDisableWatchdog] = opt
 	if opts.NotEraseInstruction {
 		opt = 1
 	} else {
@@ -75,7 +97,7 @@ func Set(tpl []byte, opts *Options) ([]byte, error) {
 	} else {
 		opt = 0
 	}
-	stub[OptOffsetNotTrackCurrentThread] = opt
+	stub[OptOffsetTrackCurrentThread] = opt
 	return output, nil
 }
 
@@ -93,13 +115,19 @@ func Get(sc []byte, offset int) (*Options, error) {
 	// read option from stub
 	opts := Options{}
 	stub := sc[offset:]
+	if stub[OptOffsetDisableSysmon] != 0 {
+		opts.DisableSysmon = true
+	}
+	if stub[OptOffsetDisableWatchdog] != 0 {
+		opts.DisableWatchdog = true
+	}
 	if stub[OptOffsetNotEraseInstruction] != 0 {
 		opts.NotEraseInstruction = true
 	}
 	if stub[OptOffsetNotAdjustProtect] != 0 {
 		opts.NotAdjustProtect = true
 	}
-	if stub[OptOffsetNotTrackCurrentThread] != 0 {
+	if stub[OptOffsetTrackCurrentThread] != 0 {
 		opts.TrackCurrentThread = true
 	}
 	return &opts, nil
@@ -108,15 +136,23 @@ func Get(sc []byte, offset int) (*Options, error) {
 // Flag is used to read options from command line.
 func Flag(opts *Options) {
 	flag.BoolVar(
-		&opts.NotEraseInstruction, "opt-nei", false,
-		"not erase runtime instructions after call Runtime_M.Exit",
+		&opts.DisableSysmon, "grt-ds", false,
+		"Gleam-RT: disable sysmon for implement single thread model",
 	)
 	flag.BoolVar(
-		&opts.NotAdjustProtect, "opt-nap", false,
-		"not adjust current memory page protect for erase runtime",
+		&opts.DisableWatchdog, "grt-dw", false,
+		"Gleam-RT: disable watchdog for implement single thread model.",
 	)
 	flag.BoolVar(
-		&opts.TrackCurrentThread, "opt-tct", false,
-		"track current thread for test or debug mode",
+		&opts.NotEraseInstruction, "grt-nei", false,
+		"Gleam-RT: not erase runtime instructions after runtime stop",
+	)
+	flag.BoolVar(
+		&opts.NotAdjustProtect, "grt-nap", false,
+		"Gleam-RT: not adjust current memory page protect for erase runtime",
+	)
+	flag.BoolVar(
+		&opts.TrackCurrentThread, "grt-tct", false,
+		"Gleam-RT: track current thread for test or debug mode",
 	)
 }
