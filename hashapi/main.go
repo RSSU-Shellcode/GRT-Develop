@@ -14,7 +14,7 @@ import (
 var (
 	format   string
 	modName  string
-	funcName string
+	procName string
 	hexKey   string
 	concise  bool
 )
@@ -29,7 +29,7 @@ func init() {
 	}
 	flag.StringVar(&format, "fmt", defaultFormat, "binary format: 32 or 64")
 	flag.StringVar(&modName, "mod", "kernel32.dll", "module name")
-	flag.StringVar(&funcName, "func", "WinExec", "function name")
+	flag.StringVar(&procName, "proc", "WinExec", "procedure name")
 	flag.StringVar(&hexKey, "key", "", "specific key, it must be hex format")
 	flag.BoolVar(&concise, "conc", false, "print concise result for development")
 	flag.Parse()
@@ -37,32 +37,33 @@ func init() {
 
 func main() {
 	var (
-		numZero string
-		apiHash []byte
-		hashKey []byte
-		err     error
+		nZero string
+		mHash []byte
+		pHash []byte
+		hKey  []byte
+		err   error
 	)
 	if hexKey != "" {
-		hashKey, err = hex.DecodeString(hexKey)
+		hKey, err = hex.DecodeString(hexKey)
 		if err != nil {
 			log.Fatalln("invalid hash key:", err)
 		}
 	}
 	switch format {
 	case "64":
-		if hashKey != nil {
-			apiHash, err = rorwk.HashAPI64WithKey(modName, funcName, hashKey)
+		if hKey == nil {
+			mHash, pHash, hKey, err = rorwk.HashAPI64(modName, procName)
 		} else {
-			apiHash, hashKey, err = rorwk.HashAPI64(modName, funcName)
+			mHash, pHash, err = rorwk.HashAPI64WithKey(modName, procName, hKey)
 		}
-		numZero = "16"
+		nZero = "16"
 	case "32":
-		if hashKey != nil {
-			apiHash, err = rorwk.HashAPI32WithKey(modName, funcName, hashKey)
+		if hKey == nil {
+			mHash, pHash, hKey, err = rorwk.HashAPI32(modName, procName)
 		} else {
-			apiHash, hashKey, err = rorwk.HashAPI32(modName, funcName)
+			mHash, pHash, err = rorwk.HashAPI32WithKey(modName, procName, hKey)
 		}
-		numZero = "8"
+		nZero = "8"
 	default:
 		log.Fatalln("invalid format:", format)
 	}
@@ -70,19 +71,24 @@ func main() {
 		log.Fatalln("failed to calculate hash:", err)
 	}
 	if concise {
-		h := rorwk.BytesToUint64(apiHash)
-		k := rorwk.BytesToUint64(hashKey)
-		fmt.Printf("0x%0"+numZero+"X, "+"0x%0"+numZero+"X // %s\n", h, k, funcName)
+		f := "0x%0" + nZero + "X"
+		m := rorwk.BytesToUint64(mHash)
+		p := rorwk.BytesToUint64(pHash)
+		k := rorwk.BytesToUint64(hKey)
+		fmt.Printf("{ "+f+", "+f+", "+f+" } // %s\n", m, p, k, procName)
 		return
 	}
-	fmt.Println("module:  ", modName)
-	fmt.Println("function:", funcName)
-	fmt.Printf("format:   %s bit\n", format)
+	fmt.Println("module:   ", modName)
+	fmt.Println("procedure:", procName)
+	fmt.Printf("format:    %s bit\n", format)
 	fmt.Println()
-	fmt.Printf("Hash: 0x%0"+numZero+"X\n", rorwk.BytesToUint64(apiHash))
-	fmt.Printf("Key:  0x%0"+numZero+"X\n", rorwk.BytesToUint64(hashKey))
-	fmt.Printf("Hash: %s\n", dumpBytesHex(apiHash))
-	fmt.Printf("Key:  %s\n", dumpBytesHex(hashKey))
+	fmt.Printf("Module Hash:    0x%0"+nZero+"X\n", rorwk.BytesToUint64(mHash))
+	fmt.Printf("Procedure Hash: 0x%0"+nZero+"X\n", rorwk.BytesToUint64(pHash))
+	fmt.Printf("Hash Key:       0x%0"+nZero+"X\n", rorwk.BytesToUint64(hKey))
+	fmt.Println()
+	fmt.Printf("Module Hash:    %s\n", dumpBytesHex(mHash))
+	fmt.Printf("Procedure Hash: %s\n", dumpBytesHex(pHash))
+	fmt.Printf("Hash Key:       %s\n", dumpBytesHex(hKey))
 }
 
 func dumpBytesHex(b []byte) string {
