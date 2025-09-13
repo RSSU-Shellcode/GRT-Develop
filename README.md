@@ -14,15 +14,17 @@ import (
 )
 
 func main() {
-    tpl, err := os.ReadFile("Gleam-RT.bin")
+    template, err := os.ReadFile("Gleam-RT.bin")
     checkError(err)
 
     opts := option.Options{
+        DisableSysmon:       false,
+        DisableWatchdog:     false,
         NotEraseInstruction: false,
         NotAdjustProtect:    false,
         TrackCurrentThread:  false,
     }
-    tpl, err = option.Set(tpl, &opts)
+    template, err = option.Set(template, &opts)
     checkError(err)
 
     arg1 := &argument.Arg{
@@ -36,7 +38,7 @@ func main() {
     stub, err := argument.Encode(arg1, arg2)
     checkError(err)
 
-    output := append(tpl, stub...)
+    output := append(template, stub...)
     err = os.WriteFile("output.bin", output, 0600)
     checkError(err)
 }
