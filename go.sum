@@ -1,5 +1,5 @@
-github.com/For-ACGN/hash-api v1.0.0 h1:Z1HdS7Kr7/VLs0hYx4KEPPrJQA6U/V+HWH815W2RNcM=
-github.com/For-ACGN/hash-api v1.0.0/go.mod h1:rq1JYuUlyHde4YenkMVq8FH/jUJp1N7CjvJ8F+6MD64=
+github.com/For-ACGN/hash-api v1.1.0 h1:RjywJd1+V8oM43+S6DDVJ7jzO8dD4PrTKKejPjcr3jc=
+github.com/For-ACGN/hash-api v1.1.0/go.mod h1:A5Eo/yv64YJVwxUneo5wlWYMlwiLTIbSCF0ii3XWKgY=
 github.com/For-ACGN/monkey v1.0.1 h1:LgJow/8dG7iJOweEU1A1qSuTWde93lA+fWpSjjDrJY0=
 github.com/For-ACGN/monkey v1.0.1/go.mod h1:+Z47iazJzWPwzyOg/ZTnM+CQyPz/Cv/AmJXL5R+7ozo=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -16,8 +16,9 @@ github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
