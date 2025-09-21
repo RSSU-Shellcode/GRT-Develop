@@ -75,7 +75,7 @@ func main() {
 		m := rorwk.BytesToUint64(mHash)
 		p := rorwk.BytesToUint64(pHash)
 		k := rorwk.BytesToUint64(hKey)
-		fmt.Printf("{ "+f+", "+f+", "+f+" } // %s\n", m, p, k, procName)
+		fmt.Printf("{ "+f+", "+f+", "+f+" }, // %s\n", m, p, k, procName)
 		return
 	}
 	fmt.Println("module:   ", modName)
