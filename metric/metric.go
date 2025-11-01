@@ -56,6 +56,7 @@ type DTStatus struct {
 	InVirtualMachine bool `toml:"in_virtual_machine" json:"in_virtual_machine"`
 	InEmulator       bool `toml:"in_emulator"        json:"in_emulator"`
 	IsAccelerated    bool `toml:"is_accelerated"     json:"is_accelerated"`
+	SafeRank         int8 `toml:"safe_rank"          json:"safe_rank"`
 }
 
 // SMStatus contains status about sysmon.
