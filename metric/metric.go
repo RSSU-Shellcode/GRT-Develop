@@ -6,6 +6,7 @@ type Metrics struct {
 	Memory   MTStatus `toml:"memory"   json:"memory"`
 	Thread   TTStatus `toml:"thread"   json:"thread"`
 	Resource RTStatus `toml:"resource" json:"resource"`
+	Detector DTStatus `toml:"detector" json:"detector"`
 	Sysmon   SMStatus `toml:"sysmon"   json:"sysmon"`
 	Watchdog WDStatus `toml:"watchdog" json:"watchdog"`
 }
@@ -43,6 +44,17 @@ type RTStatus struct {
 	NumIOCPs          int64 `toml:"num_iocps"           json:"num_iocps"`
 	NumRegKeys        int64 `toml:"num_reg_keys"        json:"num_reg_keys"`
 	NumSockets        int64 `toml:"num_sockets"         json:"num_sockets"`
+}
+
+// DTStatus contains status about detector.
+type DTStatus struct {
+	IsEnabled        bool `toml:"is_enabled"         json:"is_enabled"`
+	HasDebugger      bool `toml:"has_debugger"       json:"has_debugger"`
+	HasMemoryScanner bool `toml:"has_memory_scanner" json:"has_memory_scanner"`
+	InSandbox        bool `toml:"in_sandbox"         json:"in_sandbox"`
+	InVirtualMachine bool `toml:"in_virtual_machine" json:"in_virtual_machine"`
+	InEmulator       bool `toml:"in_emulator"        json:"in_emulator"`
+	IsAccelerated    bool `toml:"is_accelerated"     json:"is_accelerated"`
 }
 
 // SMStatus contains status about sysmon.
