@@ -19,6 +19,7 @@ func init() {
 func TestSet(t *testing.T) {
 	t.Run("common", func(t *testing.T) {
 		opts := &Options{
+			DisableDetector:     true,
 			DisableSysmon:       true,
 			DisableWatchdog:     true,
 			NotEraseInstruction: true,
@@ -36,6 +37,7 @@ func TestSet(t *testing.T) {
 		o, err = Get(output, 64)
 		require.NoError(t, err)
 		opts = &Options{
+			DisableDetector:     false,
 			DisableSysmon:       false,
 			DisableWatchdog:     false,
 			NotEraseInstruction: false,
@@ -63,6 +65,7 @@ func TestSet(t *testing.T) {
 func TestGet(t *testing.T) {
 	t.Run("common", func(t *testing.T) {
 		opts := &Options{
+			DisableDetector:     true,
 			DisableSysmon:       true,
 			DisableWatchdog:     true,
 			NotEraseInstruction: true,
@@ -102,6 +105,7 @@ func TestGet(t *testing.T) {
 
 func TestFlag(t *testing.T) {
 	opts := Options{
+		DisableDetector:     true,
 		DisableSysmon:       true,
 		DisableWatchdog:     true,
 		NotEraseInstruction: true,
