@@ -22,7 +22,8 @@ const (
 
 // options offset of the option stub.
 const (
-	OptOffsetDisableDetector = iota + 1
+	OptOffsetEnableSecurityMode = iota + 1
+	OptOffsetDisableDetector
 	OptOffsetDisableSysmon
 	OptOffsetDisableWatchdog
 	OptOffsetNotEraseInstruction
@@ -32,6 +33,9 @@ const (
 
 // Options contains options about Gleam-RT.
 type Options struct {
+	// detect environment when initialize runtime, if not safe, stop at once.
+	EnableSecurityMode bool `toml:"enable_security_mode" json:"enable_security_mode"`
+
 	// disable detector for test or debug.
 	DisableDetector bool `toml:"disable_detector" json:"disable_detector"`
 
@@ -72,6 +76,12 @@ func Set(tpl []byte, opts *Options) ([]byte, error) {
 	copy(output, tpl)
 	stub = output[len(output)-StubSize:]
 	var opt byte
+	if opts.EnableSecurityMode {
+		opt = 1
+	} else {
+		opt = 0
+	}
+	stub[OptOffsetEnableSecurityMode] = opt
 	if opts.DisableDetector {
 		opt = 1
 	} else {
@@ -125,6 +135,9 @@ func Get(sc []byte, offset int) (*Options, error) {
 	// read option from stub
 	opts := Options{}
 	stub := sc[offset:]
+	if stub[OptOffsetEnableSecurityMode] != 0 {
+		opts.EnableSecurityMode = true
+	}
 	if stub[OptOffsetDisableDetector] != 0 {
 		opts.DisableDetector = true
 	}
@@ -148,6 +161,10 @@ func Get(sc []byte, offset int) (*Options, error) {
 
 // Flag is used to read options from command line.
 func Flag(opts *Options) {
+	flag.BoolVar(
+		&opts.EnableSecurityMode, "grt-esm", false,
+		"Gleam-RT: detect environment when initialize runtime",
+	)
 	flag.BoolVar(
 		&opts.DisableDetector, "grt-dd", false,
 		"Gleam-RT: disable detector for test or debug",
