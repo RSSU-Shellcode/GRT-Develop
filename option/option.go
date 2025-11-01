@@ -22,7 +22,8 @@ const (
 
 // options offset of the option stub.
 const (
-	OptOffsetDisableSysmon = iota + 1
+	OptOffsetDisableDetector = iota + 1
+	OptOffsetDisableSysmon
 	OptOffsetDisableWatchdog
 	OptOffsetNotEraseInstruction
 	OptOffsetNotAdjustProtect
@@ -31,6 +32,9 @@ const (
 
 // Options contains options about Gleam-RT.
 type Options struct {
+	// disable detector for test or debug.
+	DisableDetector bool `toml:"disable_detector" json:"disable_detector"`
+
 	// disable sysmon for implement single thread model.
 	DisableSysmon bool `toml:"disable_sysmon" json:"disable_sysmon"`
 
@@ -68,6 +72,12 @@ func Set(tpl []byte, opts *Options) ([]byte, error) {
 	copy(output, tpl)
 	stub = output[len(output)-StubSize:]
 	var opt byte
+	if opts.DisableDetector {
+		opt = 1
+	} else {
+		opt = 0
+	}
+	stub[OptOffsetDisableDetector] = opt
 	if opts.DisableSysmon {
 		opt = 1
 	} else {
@@ -115,6 +125,9 @@ func Get(sc []byte, offset int) (*Options, error) {
 	// read option from stub
 	opts := Options{}
 	stub := sc[offset:]
+	if stub[OptOffsetDisableDetector] != 0 {
+		opts.DisableDetector = true
+	}
 	if stub[OptOffsetDisableSysmon] != 0 {
 		opts.DisableSysmon = true
 	}
@@ -135,6 +148,10 @@ func Get(sc []byte, offset int) (*Options, error) {
 
 // Flag is used to read options from command line.
 func Flag(opts *Options) {
+	flag.BoolVar(
+		&opts.DisableDetector, "grt-dd", false,
+		"Gleam-RT: disable detector for test or debug",
+	)
 	flag.BoolVar(
 		&opts.DisableSysmon, "grt-ds", false,
 		"Gleam-RT: disable sysmon for implement single thread model",
