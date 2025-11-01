@@ -13,7 +13,8 @@ type Metrics struct {
 
 // LTStatus contains status about library tracker.
 type LTStatus struct {
-	NumModules int64 `toml:"num_modules" json:"num_modules"`
+	NumModules    int64 `toml:"num_modules"    json:"num_modules"`
+	NumProcedures int64 `toml:"num_procedures" json:"num_procedures"`
 }
 
 // MTStatus contains status about memory tracker.
@@ -59,6 +60,7 @@ type DTStatus struct {
 
 // SMStatus contains status about sysmon.
 type SMStatus struct {
+	IsEnabled  bool  `toml:"is_enabled" json:"is_enabled"`
 	NumNormal  int64 `toml:"num_normal"  json:"num_normal"`
 	NumRecover int64 `toml:"num_recover" json:"num_recover"`
 	NumPanic   int64 `toml:"num_panic"   json:"num_panic"`
@@ -66,6 +68,7 @@ type SMStatus struct {
 
 // WDStatus contains status about watchdog.
 type WDStatus struct {
+	IsEnabled bool  `toml:"is_enabled" json:"is_enabled"`
 	NumKick   int64 `toml:"num_kick"   json:"num_kick"`
 	NumNormal int64 `toml:"num_normal" json:"num_normal"`
 	NumReset  int64 `toml:"num_reset"  json:"num_reset"`
