@@ -18,6 +18,8 @@ func main() {
     checkError(err)
 
     opts := option.Options{
+	    EnableSecurityMode:  false,
+	    DisableDetector:     false,
         DisableSysmon:       false,
         DisableWatchdog:     false,
         NotEraseInstruction: false,
