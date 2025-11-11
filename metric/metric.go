@@ -1,5 +1,20 @@
 package metric
 
+// BOOL is an int32 for structure align.
+type BOOL int32
+
+// ToBool is used to convert to go bool.
+func (b BOOL) ToBool() bool {
+	return b != 0
+}
+
+func (b BOOL) String() string {
+	if b.ToBool() {
+		return "true"
+	}
+	return "false"
+}
+
 // Metrics contains status about runtime submodules.
 type Metrics struct {
 	Library  LTStatus `toml:"library"  json:"library"`
@@ -49,19 +64,20 @@ type RTStatus struct {
 
 // DTStatus contains status about detector.
 type DTStatus struct {
-	IsEnabled        bool `toml:"is_enabled"         json:"is_enabled"`
-	HasDebugger      bool `toml:"has_debugger"       json:"has_debugger"`
-	HasMemoryScanner bool `toml:"has_memory_scanner" json:"has_memory_scanner"`
-	InSandbox        bool `toml:"in_sandbox"         json:"in_sandbox"`
-	InVirtualMachine bool `toml:"in_virtual_machine" json:"in_virtual_machine"`
-	InEmulator       bool `toml:"in_emulator"        json:"in_emulator"`
-	IsAccelerated    bool `toml:"is_accelerated"     json:"is_accelerated"`
-	SafeRank         int8 `toml:"safe_rank"          json:"safe_rank"`
+	IsEnabled        BOOL  `toml:"is_enabled"         json:"is_enabled"`
+	HasDebugger      BOOL  `toml:"has_debugger"       json:"has_debugger"`
+	HasMemoryScanner BOOL  `toml:"has_memory_scanner" json:"has_memory_scanner"`
+	InSandbox        BOOL  `toml:"in_sandbox"         json:"in_sandbox"`
+	InVirtualMachine BOOL  `toml:"in_virtual_machine" json:"in_virtual_machine"`
+	InEmulator       BOOL  `toml:"in_emulator"        json:"in_emulator"`
+	IsAccelerated    BOOL  `toml:"is_accelerated"     json:"is_accelerated"`
+	SafeRank         int32 `toml:"safe_rank"          json:"safe_rank"`
 }
 
 // SMStatus contains status about sysmon.
 type SMStatus struct {
-	IsEnabled  bool  `toml:"is_enabled" json:"is_enabled"`
+	IsEnabled  BOOL  `toml:"is_enabled"  json:"is_enabled"`
+	Reserved   int32 `toml:"-"           json:"-"`
 	NumNormal  int64 `toml:"num_normal"  json:"num_normal"`
 	NumRecover int64 `toml:"num_recover" json:"num_recover"`
 	NumPanic   int64 `toml:"num_panic"   json:"num_panic"`
@@ -69,7 +85,8 @@ type SMStatus struct {
 
 // WDStatus contains status about watchdog.
 type WDStatus struct {
-	IsEnabled bool  `toml:"is_enabled" json:"is_enabled"`
+	IsEnabled BOOL  `toml:"is_enabled" json:"is_enabled"`
+	Reserved  int32 `toml:"-"          json:"-"`
 	NumKick   int64 `toml:"num_kick"   json:"num_kick"`
 	NumNormal int64 `toml:"num_normal" json:"num_normal"`
 	NumReset  int64 `toml:"num_reset"  json:"num_reset"`
