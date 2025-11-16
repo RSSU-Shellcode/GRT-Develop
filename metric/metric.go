@@ -1,5 +1,10 @@
 package metric
 
+import (
+	"errors"
+	"strings"
+)
+
 // BOOL is an int32 for structure align.
 type BOOL int32
 
@@ -13,6 +18,24 @@ func (b BOOL) String() string {
 		return "true"
 	}
 	return "false"
+}
+
+// MarshalText is used to implement TextMarshaler interface.
+func (b BOOL) MarshalText() ([]byte, error) {
+	return []byte(b.String()), nil
+}
+
+// UnmarshalText is used to implement TextUnmarshaler interface.
+func (b *BOOL) UnmarshalText(data []byte) error {
+	switch strings.ToLower(string(data)) {
+	case "true":
+		*b = BOOL(1)
+	case "false":
+		*b = BOOL(0)
+	default:
+		return errors.New("invalid BOOL value")
+	}
+	return nil
 }
 
 // Metrics contains status about runtime submodules.
