@@ -12,8 +12,8 @@ type Metrics struct {
 	Thread   TTStatus `toml:"thread"   json:"thread"`
 	Resource RTStatus `toml:"resource" json:"resource"`
 	Detector DTStatus `toml:"detector" json:"detector"`
-	Sysmon   SMStatus `toml:"sysmon"   json:"sysmon"`
 	Watchdog WDStatus `toml:"watchdog" json:"watchdog"`
+	Sysmon   SMStatus `toml:"sysmon"   json:"sysmon"`
 }
 
 // LTStatus contains status about library tracker.
@@ -64,15 +64,6 @@ type DTStatus struct {
 	SafeRank         int32 `toml:"safe_rank"          json:"safe_rank"`
 }
 
-// SMStatus contains status about sysmon.
-type SMStatus struct {
-	IsEnabled  BOOL  `toml:"is_enabled"  json:"is_enabled"`
-	Reserved   int32 `toml:"-"           json:"-"`
-	NumNormal  int64 `toml:"num_normal"  json:"num_normal"`
-	NumRecover int64 `toml:"num_recover" json:"num_recover"`
-	NumPanic   int64 `toml:"num_panic"   json:"num_panic"`
-}
-
 // WDStatus contains status about watchdog.
 type WDStatus struct {
 	IsEnabled BOOL  `toml:"is_enabled" json:"is_enabled"`
@@ -80,6 +71,15 @@ type WDStatus struct {
 	NumKick   int64 `toml:"num_kick"   json:"num_kick"`
 	NumNormal int64 `toml:"num_normal" json:"num_normal"`
 	NumReset  int64 `toml:"num_reset"  json:"num_reset"`
+}
+
+// SMStatus contains status about sysmon.
+type SMStatus struct {
+	IsEnabled  BOOL  `toml:"is_enabled"  json:"is_enabled"`
+	Reserved   int32 `toml:"-"           json:"-"`
+	NumNormal  int64 `toml:"num_normal"  json:"num_normal"`
+	NumRecover int64 `toml:"num_recover" json:"num_recover"`
+	NumPanic   int64 `toml:"num_panic"   json:"num_panic"`
 }
 
 // BOOL is an int32 for structure align.
