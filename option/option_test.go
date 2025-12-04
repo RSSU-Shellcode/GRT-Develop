@@ -21,8 +21,8 @@ func TestSet(t *testing.T) {
 		opts := &Options{
 			EnableSecurityMode:  true,
 			DisableDetector:     true,
-			DisableSysmon:       true,
 			DisableWatchdog:     true,
+			DisableSysmon:       true,
 			NotEraseInstruction: true,
 			NotAdjustProtect:    true,
 			TrackCurrentThread:  true,
@@ -40,8 +40,8 @@ func TestSet(t *testing.T) {
 		opts = &Options{
 			EnableSecurityMode:  false,
 			DisableDetector:     false,
-			DisableSysmon:       false,
 			DisableWatchdog:     false,
+			DisableSysmon:       false,
 			NotEraseInstruction: false,
 			NotAdjustProtect:    false,
 			TrackCurrentThread:  false,
@@ -69,8 +69,8 @@ func TestGet(t *testing.T) {
 		opts := &Options{
 			EnableSecurityMode:  true,
 			DisableDetector:     true,
-			DisableSysmon:       true,
 			DisableWatchdog:     true,
+			DisableSysmon:       true,
 			NotEraseInstruction: true,
 			NotAdjustProtect:    true,
 			TrackCurrentThread:  true,
@@ -110,8 +110,8 @@ func TestFlag(t *testing.T) {
 	opts := Options{
 		EnableSecurityMode:  true,
 		DisableDetector:     true,
-		DisableSysmon:       true,
 		DisableWatchdog:     true,
+		DisableSysmon:       true,
 		NotEraseInstruction: true,
 		NotAdjustProtect:    true,
 		TrackCurrentThread:  true,
