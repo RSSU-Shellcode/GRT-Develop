@@ -20,8 +20,8 @@ func main() {
     opts := option.Options{
 	    EnableSecurityMode:  false,
 	    DisableDetector:     false,
-        DisableSysmon:       false,
         DisableWatchdog:     false,
+	    DisableSysmon:       false,
         NotEraseInstruction: false,
         NotAdjustProtect:    false,
         TrackCurrentThread:  false,
