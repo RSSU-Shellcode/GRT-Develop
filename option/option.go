@@ -24,8 +24,8 @@ const (
 const (
 	OptOffsetEnableSecurityMode = iota + 1
 	OptOffsetDisableDetector
-	OptOffsetDisableSysmon
 	OptOffsetDisableWatchdog
+	OptOffsetDisableSysmon
 	OptOffsetNotEraseInstruction
 	OptOffsetNotAdjustProtect
 	OptOffsetTrackCurrentThread
@@ -39,12 +39,12 @@ type Options struct {
 	// disable detector for test or debug.
 	DisableDetector bool `toml:"disable_detector" json:"disable_detector"`
 
-	// disable sysmon for implement single thread model.
-	DisableSysmon bool `toml:"disable_sysmon" json:"disable_sysmon"`
-
 	// disable watchdog for implement single thread model.
 	// it will overwrite the control from upper module.
 	DisableWatchdog bool `toml:"disable_watchdog" json:"disable_watchdog"`
+
+	// disable sysmon for implement single thread model.
+	DisableSysmon bool `toml:"disable_sysmon" json:"disable_sysmon"`
 
 	// not erase runtime instructions after call Runtime_M.Exit.
 	NotEraseInstruction bool `toml:"not_erase_instruction" json:"not_erase_instruction"`
@@ -93,14 +93,14 @@ func Set(tpl []byte, opts *Options) ([]byte, error) {
 	} else {
 		opt = 0
 	}
-	stub[OptOffsetDisableSysmon] = opt
-	if opts.DisableWatchdog {
+	stub[OptOffsetDisableWatchdog] = opt
+	if opts.NotEraseInstruction {
 		opt = 1
 	} else {
 		opt = 0
 	}
-	stub[OptOffsetDisableWatchdog] = opt
-	if opts.NotEraseInstruction {
+	stub[OptOffsetDisableSysmon] = opt
+	if opts.DisableWatchdog {
 		opt = 1
 	} else {
 		opt = 0
@@ -141,11 +141,11 @@ func Get(sc []byte, offset int) (*Options, error) {
 	if stub[OptOffsetDisableDetector] != 0 {
 		opts.DisableDetector = true
 	}
-	if stub[OptOffsetDisableSysmon] != 0 {
-		opts.DisableSysmon = true
-	}
 	if stub[OptOffsetDisableWatchdog] != 0 {
 		opts.DisableWatchdog = true
+	}
+	if stub[OptOffsetDisableSysmon] != 0 {
+		opts.DisableSysmon = true
 	}
 	if stub[OptOffsetNotEraseInstruction] != 0 {
 		opts.NotEraseInstruction = true
@@ -170,12 +170,12 @@ func Flag(opts *Options) {
 		"Gleam-RT: disable detector for test or debug",
 	)
 	flag.BoolVar(
-		&opts.DisableSysmon, "grt-ds", false,
-		"Gleam-RT: disable sysmon for implement single thread model",
-	)
-	flag.BoolVar(
 		&opts.DisableWatchdog, "grt-dw", false,
 		"Gleam-RT: disable watchdog for implement single thread model.",
+	)
+	flag.BoolVar(
+		&opts.DisableSysmon, "grt-ds", false,
+		"Gleam-RT: disable sysmon for implement single thread model",
 	)
 	flag.BoolVar(
 		&opts.NotEraseInstruction, "grt-nei", false,
