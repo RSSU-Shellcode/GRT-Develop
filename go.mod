@@ -1,4 +1,4 @@
-module github.com/RSSU-Shellcode/GRT-Develop
+module github.com/RTS-Framework/GRT-Develop
 
 go 1.20
 
