@@ -3,7 +3,10 @@ package shield
 import (
 	cr "crypto/rand"
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/For-ACGN/go-keystone"
@@ -19,6 +22,10 @@ type Generator struct {
 
 	// context arguments
 	arch int
+	opts *Options
+
+	// for select random register
+	regBox []string
 }
 
 // Options contains options about generate shield.
@@ -31,6 +38,12 @@ type Options struct {
 
 	// specify the x64 shield template.
 	TemplateX64 string `toml:"template_x64" json:"template_x64"`
+}
+
+// Context contains the output and context data in Generate.
+type Context struct {
+	Output []byte `toml:"output" json:"output"`
+	Seed   int64  `toml:"seed"   json:"seed"`
 }
 
 // NewGenerator is used to create a shield generator.
@@ -49,8 +62,40 @@ func NewGenerator() *Generator {
 	return &generator
 }
 
-func (gen *Generator) Generate() {
-
+// Generate is used to generate a new random shield.
+func (gen *Generator) Generate(arch int, opts *Options) (ctx *Context, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprint(r))
+		}
+	}()
+	if opts == nil {
+		opts = new(Options)
+	}
+	gen.arch = arch
+	gen.opts = opts
+	// initialize keystone engine
+	err = gen.initAssembler()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize assembler: %s", err)
+	}
+	// set random seed
+	seed := opts.RandSeed
+	if seed == 0 {
+		seed = gen.rand.Int63()
+	}
+	gen.rand.Seed(seed)
+	// build shield from template
+	shield, err := gen.buildShield()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build shield: %s", err)
+	}
+	// build context for test and debug
+	ctx = &Context{
+		Output: shield,
+		Seed:   seed,
+	}
+	return ctx, nil
 }
 
 func (gen *Generator) initAssembler() error {
@@ -81,4 +126,38 @@ func (gen *Generator) initAssembler() error {
 		panic("unreachable code")
 	}
 	return ase.Option(keystone.OPT_SYNTAX, keystone.OPT_SYNTAX_INTEL)
+}
+
+func (gen *Generator) assemble(src string) ([]byte, error) {
+	if strings.Contains(src, "<no value>") {
+		return nil, errors.New("invalid register in assembly source")
+	}
+	if strings.Contains(src, "<nil>") {
+		return nil, errors.New("invalid usage in assembly source")
+	}
+	switch gen.arch {
+	case 32:
+		return gen.ase32.Assemble(src, 0)
+	case 64:
+		return gen.ase64.Assemble(src, 0)
+	default:
+		panic("unreachable code")
+	}
+}
+
+// Close is used to close shield generator.
+func (gen *Generator) Close() error {
+	if gen.ase32 != nil {
+		err := gen.ase32.Close()
+		if err != nil {
+			return err
+		}
+	}
+	if gen.ase64 != nil {
+		err := gen.ase64.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
