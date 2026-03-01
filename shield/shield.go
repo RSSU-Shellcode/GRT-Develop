@@ -1,19 +1,19 @@
 package shield
 
 import (
+	"bytes"
 	"embed"
+	"fmt"
 	"maps"
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 // just for prevent [import _ "embed"] :)
 var _ embed.FS
 
-// The role of the payload loader is used to decrypt payload
-// in the tail section to a new RWX page, then create thread at
-// the decrypted payload(default loader template).
 var (
 	//go:embed template/shield_x86.asm
 	defaultTemplateX86 string
@@ -36,8 +36,52 @@ var (
 	}
 )
 
+type shieldCtx struct {
+	// for replace registers
+	Reg map[string]string
+}
+
 func (gen *Generator) buildShield() ([]byte, error) {
-	return nil, nil
+	var shield string
+	switch gen.arch {
+	case 32:
+		shield = gen.getTemplateX86()
+	case 64:
+		shield = gen.getTemplateX64()
+	}
+	ctx := &shieldCtx{
+		Reg: gen.buildRandomRegisterMap(),
+	}
+	tpl, err := template.New("shield").Parse(shield)
+	if err != nil {
+		return nil, fmt.Errorf("invalid shield template: %s", err)
+	}
+	buf := bytes.NewBuffer(make([]byte, 0, 512))
+	err = tpl.Execute(buf, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build shield source: %s", err)
+	}
+	output, err := gen.assemble(buf.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to assemble shield source: %s", err)
+	}
+	return output, nil
+}
+
+func (gen *Generator) getTemplateX86() string {
+	tpl := gen.opts.TemplateX86
+	if tpl != "" {
+		return tpl
+	}
+	return defaultTemplateX86
+}
+
+func (gen *Generator) getTemplateX64() string {
+	tpl := gen.opts.TemplateX64
+	if tpl != "" {
+		return tpl
+	}
+	return defaultTemplateX64
 }
 
 func (gen *Generator) buildRandomRegisterMap() map[string]string {
