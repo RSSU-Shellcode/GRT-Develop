@@ -43,23 +43,53 @@ entry:
   mov [rsp + 2*8], {{.RegV.rcx}}
 
   // encrypt the critical memory
-  mov {{.RegV.rcx}}, [{{.RegN.rbp}}]
-  mov {{.RegV.rdx}}, [{{.RegN.rbp}} + 1*8]
-  call encrypt
+  mov {{.RegV.rcx}}, [{{.RegN.rbp}}]           // get critical address
+  mov {{.RegV.rdx}}, [{{.RegN.rbp}} + 1*8]     // set the critical size
+  call xor_buf
 
-  // adjust the protect to PAGE_READWRITE
+  // adjust the page protect to PAGE_READWRITE
   mov r8, 0x04
   call protect
 
+  // prepare argument before encrypt stack
+  mov {{.RegV.rax}}, 0xFFFFFFFF
+  mov rdx, {{.RegV.rax}}                       // set INFINITE
+  mov rcx, [{{.RegN.rbp}} + 4*8]               // set handle of hTimer
+  mov rax, [{{.RegN.rbp}} + 3*8]               // get address of WaitForSingleObject
 
+  // save argument about WaitForSingleObject
+  push rax
+  push rcx
+  push rdx
 
+  // encrypt  argument structure
+  mov {{.RegV.rcx}}, {{.RegN.rbp}}             // get structure pointer
+  mov {{.RegV.rdx}}, 6*8                       // set the buffer size
+  call xor_buf
 
+  // restore argument about WaitForSingleObject
+  pop rdx
+  pop rcx
+  pop rax
 
+  // Sleep with WaitForSingleObject
+  sub rsp, 0x20                                // reserve stack for call convention
+  call rax                                     // call WaitForSingleObject
+  add rsp, 0x20                                // restore stack for call convention
 
+  // decrypt argument structure
+  mov {{.RegV.rcx}}, {{.RegN.rbp}}             // get structure pointer
+  mov {{.RegV.rdx}}, 6*8                       // set the buffer size
+  call xor_buf
 
-  // recover the protect to old protect
+  // recover the page protect to old protect
   mov r8, {{.RegN.rsi}}
   call protect
+
+  // decrypt the critical memory
+  mov {{.RegV.rcx}}, [{{.RegN.rbp}}]           // get critical address
+  mov {{.RegV.rdx}}, [{{.RegN.rbp}} + 1*8]     // set the critical size
+  call xor_buf
 
   // decrypt return address
   mov {{.RegV.rcx}}, [rsp + 2*8]
@@ -77,7 +107,7 @@ entry:
   pop rbp
   ret
 
-encrypt:
+xor_buf:
   shr {{.RegV.rdx}}, 3                         // calculate the loop count
  loop_xor:
   xor [{{.RegV.rcx}}], {{.RegN.rbx}}           // encrypt 8 bytes with xor
