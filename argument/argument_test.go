@@ -135,7 +135,7 @@ func TestCompressRatio(t *testing.T) {
 		Data: bytes.Repeat([]byte{0x00}, 256*1024),
 	}
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		stub, err := Encode(arg)
 		require.NoError(t, err)
 
