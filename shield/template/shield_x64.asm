@@ -1,5 +1,7 @@
 .code64
 
+// the CriticalSize must be aligned with 8 bytes
+
 // struct:
 //   CriticalAddress
 //   CriticalSize
@@ -10,13 +12,13 @@
 
 // steps:
 //   encrypt return address
-//   encrypt the runtime instructions
-//   encrypt stack about structure
+//   encrypt the critical instructions
 //   adjust the memory page protect
+//   encrypt stack about structure
 //   call WaitForSingleObject
-//   restore the memory page protect
 //   decrypt stack about structure
-//   decrypt the runtime instructions
+//   restore the memory page protect
+//   decrypt the critical instructions
 //   decrypt return address
 
 entry:
@@ -27,26 +29,35 @@ entry:
   // save structure pointer to non-volatile register
   // save crypto key to non-volatile register
   mov {{.RegN.rbp}}, rcx
-  mov {{.RegN.rbx}}, [{{.RegN.rbp}} + (3+5)*8]
+  mov {{.RegN.rbx}}, [{{.RegN.rbp}} + 5*8]
 
   // encrypt return address
-  pop  {{.RegV.rcx}}
-  xor  {{.RegV.rcx}}, {{.RegN.rbx}}
-  push {{.RegV.rcx}}
+  mov {{.RegV.rcx}}, [rsp + 2*8]
+  xor {{.RegV.rcx}}, {{.RegN.rbx}}
+  mov [rsp + 2*8], {{.RegV.rcx}}
 
+  // encrypt the runtime instructions
+  mov {{.RegV.rcx}}, [{{.RegN.rbp}}]
+  mov {{.RegV.rdx}}, [{{.RegN.rbp}} + 1*8]
+  call encrypt
 
 
 
   // decrypt return address
-  pop  {{.RegV.rcx}}
-  xor  {{.RegV.rcx}}, {{.RegN.rbx}}
-  push {{.RegV.rcx}}
-
-  mov rax, {{.RegN.rbx}}
+  mov {{.RegV.rcx}}, [rsp + 2*8]
+  xor {{.RegV.rcx}}, {{.RegN.rbx}}
+  mov [rsp + 2*8], {{.RegV.rcx}}
 
   // restore context
   pop {{.RegN.rbx}}
   pop {{.RegN.rbp}}
+  ret
 
-
+encrypt:
+  shr {{.RegV.rdx}}, 3                  // calculate the loop count
+ loop_xor:
+  xor [{{.RegV.rcx}}], {{.RegN.rbx}}    // encrypt 8 bytes with xor
+  add {{.RegV.rcx}}, 8                  // add data address
+  dec {{.RegV.rdx}}                     // update loop count
+  jnz loop_xor                          // check need decrypt again
   ret
