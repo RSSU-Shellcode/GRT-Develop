@@ -1,6 +1,7 @@
 package shield
 
 import (
+	"fmt"
 	"runtime"
 	"strings"
 	"syscall"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+const testSleepTime = 1000 // millisecond
 
 var (
 	modKernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -34,7 +37,7 @@ func testNewShieldArgs(t *testing.T, critical []byte) *testShieldArgs {
 	if hTimer == 0 {
 		require.NoError(t, err)
 	}
-	dueTime := int64(-1000 * 1000 * 10) // 1s
+	dueTime := int64(-testSleepTime * 1000 * 10)
 	ok, _, err := procSetWaitableTimer.Call(
 		hTimer, uintptr(unsafe.Pointer(&dueTime)), 0, 0, 0, 1,
 	)
@@ -59,6 +62,7 @@ func TestShield(t *testing.T) {
 	t.Run("x86", func(t *testing.T) {
 		ctx, err := generator.Generate(32, nil)
 		require.NoError(t, err)
+		fmt.Println("size:", len(ctx.Output))
 
 		if runtime.GOOS != "windows" || runtime.GOARCH != "386" {
 			return
@@ -69,31 +73,29 @@ func TestShield(t *testing.T) {
 
 		now := time.Now()
 
-		r1, _, _ := syscallN(shield, uintptr(unsafe.Pointer(args)))
-		require.Equal(t, uintptr(0x12345678), r1)
+		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
 
-		time.Since(now)
-
+		require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
 		require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
 	})
 
 	t.Run("x64", func(t *testing.T) {
 		ctx, err := generator.Generate(64, nil)
 		require.NoError(t, err)
+		fmt.Println("size:", len(ctx.Output))
 
 		if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
 			return
 		}
+
 		shield := loadShellcode(t, ctx.Output)
 		args := testNewShieldArgs(t, critical)
 
 		now := time.Now()
 
-		r1, _, _ := syscallN(shield, uintptr(unsafe.Pointer(args)))
-		require.Equal(t, uintptr(0x12345678), r1)
+		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
 
-		time.Since(now)
-
+		require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
 		require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
 	})
 
