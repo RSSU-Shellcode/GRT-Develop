@@ -1,7 +1,9 @@
 package shield
 
 import (
+	"debug/pe"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"syscall"
@@ -10,9 +12,10 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/windows"
 )
 
-const testSleepTime = 1000 // millisecond
+const testSleepTime = 100000000 // millisecond
 
 var (
 	modKernel32 = syscall.NewLazyDLL("kernel32.dll")
@@ -53,12 +56,40 @@ func testNewShieldArgs(t *testing.T, critical []byte) *testShieldArgs {
 	return ctx
 }
 
+// try to write shield in .text section
+func testDeployShield(t *testing.T, shield []byte) uintptr {
+	exe, err := os.Executable()
+	require.NoError(t, err)
+	img, err := pe.Open(exe)
+	require.NoError(t, err)
+
+	text := img.Section(".text")
+	require.NotNil(t, text)
+	cave := text.VirtualSize - text.Size
+	if int(cave) < len(shield) {
+		return loadShellcode(t, shield)
+	}
+
+	peb := windows.RtlGetCurrentPeb()
+	address := peb.ImageBaseAddress + 0x1000 + uintptr(text.Size)
+	size := uintptr(len(shield))
+	var old uint32
+	err = windows.VirtualProtect(address, size, windows.PAGE_READWRITE, &old)
+	require.NoError(t, err)
+
+	dst := unsafe.Slice((*byte)(unsafe.Pointer(address)), size)
+	copy(dst, shield)
+
+	err = windows.VirtualProtect(address, size, old, &old)
+	require.NoError(t, err)
+	return address
+}
+
 func TestShield(t *testing.T) {
 	generator := NewGenerator()
 
 	critical := make([]byte, 8192)
 	copy(critical, "runtime instruction")
-
 	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
 
 	t.Run("x86", func(t *testing.T) {
@@ -70,7 +101,7 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		shield := loadShellcode(t, ctx.Output)
+		shield := testDeployShield(t, ctx.Output)
 		fmt.Printf("data address:   0x%X\n", criticalAddr)
 		fmt.Printf("shield address: 0x%X\n", shield)
 		args := testNewShieldArgs(t, critical)
@@ -91,7 +122,7 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		shield := loadShellcode(t, ctx.Output)
+		shield := testDeployShield(t, ctx.Output)
 		fmt.Printf("data address:   0x%X\n", criticalAddr)
 		fmt.Printf("shield address: 0x%X\n", shield)
 		args := testNewShieldArgs(t, critical)
