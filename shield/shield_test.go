@@ -59,6 +59,8 @@ func TestShield(t *testing.T) {
 	critical := make([]byte, 8192)
 	copy(critical, "runtime instruction")
 
+	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
+
 	t.Run("x86", func(t *testing.T) {
 		ctx, err := generator.Generate(32, nil)
 		require.NoError(t, err)
@@ -69,8 +71,9 @@ func TestShield(t *testing.T) {
 		}
 
 		shield := loadShellcode(t, ctx.Output)
+		fmt.Printf("data address:   0x%X\n", criticalAddr)
+		fmt.Printf("shield address: 0x%X\n", shield)
 		args := testNewShieldArgs(t, critical)
-
 		now := time.Now()
 
 		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
@@ -89,8 +92,9 @@ func TestShield(t *testing.T) {
 		}
 
 		shield := loadShellcode(t, ctx.Output)
+		fmt.Printf("data address:   0x%X\n", criticalAddr)
+		fmt.Printf("shield address: 0x%X\n", shield)
 		args := testNewShieldArgs(t, critical)
-
 		now := time.Now()
 
 		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
