@@ -1,6 +1,6 @@
 .code64
 
-// the CriticalSize must be aligned with 8 bytes
+// the CriticalSize must be 8 bytes aligned
 
 // struct:
 //   CriticalAddress
@@ -52,8 +52,9 @@ entry:
   call protect
 
   // prepare argument before encrypt stack
-  mov {{.RegV.rax}}, 0xFFFFFFFF
-  mov rdx, {{.RegV.rax}}                       // set INFINITE
+  xor {{.RegV.eax}}, {{.RegV.eax}}             // clear register
+  dec {{.RegV.eax}}                            // calcualte 0xFFFFFFFF
+  mov edx, {{.RegV.eax}}                       // set INFINITE
   mov rcx, [{{.RegN.rbp}} + 4*8]               // set handle of hTimer
   mov rax, [{{.RegN.rbp}} + 3*8]               // get address of WaitForSingleObject
 
