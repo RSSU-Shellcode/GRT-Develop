@@ -94,14 +94,18 @@ func (gen *Generator) Generate(arch int, opts *Options) (ctx *Context, err error
 		seed = gen.rand.Int63()
 	}
 	gen.rand.Seed(seed)
-	// build shield from template
-	shield, err := gen.buildShield()
+	// build shield source from template
+	shield, err := gen.buildShield("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to build shield: %s", err)
 	}
+	output, err := gen.assemble(shield)
+	if err != nil {
+		return nil, fmt.Errorf("failed to assemble shield source: %s", err)
+	}
 	// build context for test and debug
 	ctx = &Context{
-		Output: shield,
+		Output: output,
 		Seed:   seed,
 	}
 	return ctx, nil
