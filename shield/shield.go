@@ -3,6 +3,7 @@ package shield
 import (
 	"bytes"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"maps"
 	"slices"
@@ -23,12 +24,24 @@ var (
 )
 
 var (
+	registerX86 = []string{
+		"eax", "ebx", "ecx", "edx",
+		"ebp", "edi", "esi",
+	}
+
 	regVolatileX86 = []string{
 		"eax", "ecx", "edx",
 	}
 
 	regNonvolatileX86 = []string{
 		"ebx", "ebp", "edi", "esi",
+	}
+
+	registerX64 = []string{
+		"rax", "rbx", "rcx", "rdx",
+		"rbp", "rdi", "rsi",
+		"r8", "r9", "r10", "r11",
+		"r12", "r13", "r14", "r15",
 	}
 
 	regVolatileX64 = []string{
@@ -48,7 +61,7 @@ type shieldCtx struct {
 	RegN map[string]string
 }
 
-func (gen *Generator) buildShield() ([]byte, error) {
+func (gen *Generator) buildShield(src string) (string, error) {
 	var shield string
 	switch gen.arch {
 	case 32:
@@ -56,24 +69,27 @@ func (gen *Generator) buildShield() ([]byte, error) {
 	case 64:
 		shield = gen.getTemplateX64()
 	}
+	if src != "" {
+		shield = src
+	}
 	ctx := &shieldCtx{
 		RegV: gen.buildVolatileRegisterMap(),
 		RegN: gen.buildNonvolatileRegisterMap(),
 	}
-	tpl, err := template.New("shield").Parse(shield)
+	tpl, err := template.New("shield").Funcs(template.FuncMap{
+		"db":  toDB,
+		"hex": toHex,
+		"igi": gen.insertGarbageInst,
+	}).Parse(shield)
 	if err != nil {
-		return nil, fmt.Errorf("invalid shield template: %s", err)
+		return "", fmt.Errorf("invalid shield template: %s", err)
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, 512))
 	err = tpl.Execute(buf, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build shield source: %s", err)
+		return "", fmt.Errorf("failed to build shield source: %s", err)
 	}
-	output, err := gen.assemble(buf.String())
-	if err != nil {
-		return nil, fmt.Errorf("failed to assemble shield source: %s", err)
-	}
-	return output, nil
+	return buf.String(), nil
 }
 
 func (gen *Generator) getTemplateX86() string {
@@ -90,6 +106,30 @@ func (gen *Generator) getTemplateX64() string {
 		return tpl
 	}
 	return defaultTemplateX64
+}
+
+func (gen *Generator) buildRandomRegisterMap() map[string]string {
+	var reg []string
+	switch gen.arch {
+	case 32:
+		reg = slices.Clone(registerX86)
+	case 64:
+		reg = slices.Clone(registerX64)
+	}
+	gen.regBox = reg
+	register := make(map[string]string, 16)
+	switch gen.arch {
+	case 32:
+		for _, reg := range registerX86 {
+			register[reg] = gen.selectRegister()
+		}
+	case 64:
+		for _, reg := range registerX64 {
+			register[reg] = gen.selectRegister()
+		}
+		gen.buildLowBitRegisterMap(register)
+	}
+	return register
 }
 
 func (gen *Generator) buildVolatileRegisterMap() map[string]string {
@@ -156,6 +196,32 @@ func (gen *Generator) selectRegister() string {
 	// remove selected register
 	gen.regBox = append(gen.regBox[:idx], gen.regBox[idx+1:]...)
 	return reg
+}
+
+func (gen *Generator) insertGarbageInst() string {
+	if gen.opts.NoGarbage {
+		return ""
+	}
+	return ";" + toDB(gen.garbageInst())
+}
+
+func toDB(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	builder := strings.Builder{}
+	builder.WriteString(".byte ")
+	for i := 0; i < len(b); i++ {
+		builder.WriteString("0x")
+		s := hex.EncodeToString([]byte{b[i]})
+		builder.WriteString(strings.ToUpper(s))
+		builder.WriteString(", ")
+	}
+	return builder.String()
+}
+
+func toHex(v any) string {
+	return fmt.Sprintf("0x%X", v)
 }
 
 // convert r8 -> r8d, rax -> eax
