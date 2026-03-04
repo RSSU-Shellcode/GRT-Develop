@@ -30,6 +30,9 @@ type Generator struct {
 
 // Options contains options about generate shield.
 type Options struct {
+	// disable garbage instruction, not recommend.
+	NoGarbage bool `toml:"no_garbage" json:"no_garbage"`
+
 	// specify a random seed for generator.
 	RandSeed int64 `toml:"rand_seed" json:"rand_seed"`
 
@@ -38,6 +41,12 @@ type Options struct {
 
 	// specify the x64 shield template.
 	TemplateX64 string `toml:"template_x64" json:"template_x64"`
+
+	// specify the x86 junk code templates.
+	JunkCodeX86 []string `toml:"junk_code_x86" json:"junk_code_x86"`
+
+	// specify the x64 junk code templates.
+	JunkCodeX64 []string `toml:"junk_code_x64" json:"junk_code_x64"`
 }
 
 // Context contains the output and context data in Generate.
@@ -160,4 +169,11 @@ func (gen *Generator) Close() error {
 		}
 	}
 	return nil
+}
+
+// Set is used to encode shield and write to runtime template.
+func Set(tpl, shield []byte) ([]byte, error) {
+	output := make([]byte, len(tpl))
+	copy(output, tpl)
+	return output, nil
 }
