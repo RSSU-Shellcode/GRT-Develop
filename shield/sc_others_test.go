@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+func testNewShieldArgs(t *testing.T, critical []byte) *testShieldArgs {
+	return nil
+}
+
+func testDeployShield(t *testing.T, shield []byte) uintptr {
+	return 0
+}
+
 func loadShellcode(t *testing.T, sc []byte) uintptr {
 	return 0
 }
