@@ -25,12 +25,17 @@ type testShieldArgs struct {
 func TestShield(t *testing.T) {
 	generator := NewGenerator()
 
+	opts := &Options{
+		NoGarbage: true,
+		RandSeed:  1234,
+	}
+
 	critical := make([]byte, 8192)
 	copy(critical, "runtime instruction")
 	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
 
 	t.Run("x86", func(t *testing.T) {
-		ctx, err := generator.Generate(32, nil)
+		ctx, err := generator.Generate(32, opts)
 		require.NoError(t, err)
 		fmt.Println("size:", len(ctx.Output))
 
@@ -51,7 +56,7 @@ func TestShield(t *testing.T) {
 	})
 
 	t.Run("x64", func(t *testing.T) {
-		ctx, err := generator.Generate(64, nil)
+		ctx, err := generator.Generate(64, opts)
 		require.NoError(t, err)
 		fmt.Println("size:", len(ctx.Output))
 
