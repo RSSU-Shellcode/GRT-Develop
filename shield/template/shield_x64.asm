@@ -22,6 +22,12 @@
 //   decrypt return address
 
 entry:
+  // check argument is valid
+  test rcx, rcx
+  jnz next
+  ret
+ next:
+
   // ensure stack is 16 bytes aligned
   push rbp
   mov rbp, rsp
