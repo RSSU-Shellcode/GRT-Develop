@@ -52,7 +52,49 @@ entry:
   xor {{.RegV.ecx}}, {{.RegN.ebx}}
   mov [esp + 2*4], {{.RegV.ecx}}
 
+  // encrypt the critical memory
+  mov {{.RegV.ecx}}, [{{.RegN.ebp}}]           // get critical address
+  mov {{.RegV.edx}}, [{{.RegN.ebp}} + 1*4]     // set the critical size
+  call xor_buf
 
+  // adjust the page protect to PAGE_READWRITE
+  push 0x04
+  call protect
+
+  // prepare argument before encrypt stack
+  xor {{.RegV.eax}}, {{.RegV.eax}}             // clear register
+  dec {{.RegV.eax}}                            // calcualte 0xFFFFFFFF
+  mov edx, {{.RegV.eax}}                       // set INFINITE
+  mov ecx, [{{.RegN.ebp}} + 4*4]               // set handle of hTimer
+  mov eax, [{{.RegN.ebp}} + 3*4]               // get address of WaitForSingleObject
+
+  // save argument about WaitForSingleObject
+  push edx
+  push ecx
+  push eax
+
+  // encrypt argument structure
+  mov {{.RegV.ecx}}, {{.RegN.ebp}}             // get structure pointer
+  mov {{.RegV.edx}}, 6*4                       // set the buffer size
+  call xor_buf
+
+  // Sleep with WaitForSingleObject
+  pop eax                                      // get WaitForSingleObject address
+  call eax                                     // call WaitForSingleObject
+
+  // decrypt argument structure
+  mov {{.RegV.ecx}}, {{.RegN.ebp}}             // get structure pointer
+  mov {{.RegV.edx}}, 6*4                       // set the buffer size
+  call xor_buf
+
+  // recover the page protect to old protect
+  push {{.RegN.esi}}
+  call protect
+
+  // decrypt the critical memory
+  mov {{.RegV.ecx}}, [{{.RegN.ebp}}]           // get critical address
+  mov {{.RegV.edx}}, [{{.RegN.ebp}} + 1*4]     // set the critical size
+  call xor_buf
 
   // decrypt return address
   mov {{.RegV.ecx}}, [esp + 2*4]
@@ -92,4 +134,4 @@ protect:
   call {{.RegV.eax}}                           // call VirtualProtect
   mov {{.RegN.esi}}, [esp]                     // save old protect
   add esp, 0x04                                // restore stack for old protect
-  ret
+  ret 4                                        // return and release stack

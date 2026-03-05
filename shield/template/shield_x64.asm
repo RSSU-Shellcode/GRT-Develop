@@ -69,7 +69,7 @@ entry:
   push rcx
   push rdx
 
-  // encrypt  argument structure
+  // encrypt argument structure
   mov {{.RegV.rcx}}, {{.RegN.rbp}}             // get structure pointer
   mov {{.RegV.rdx}}, 6*8                       // set the buffer size
   call xor_buf
