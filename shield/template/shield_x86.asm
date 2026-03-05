@@ -29,19 +29,67 @@ entry:
   ret 4
  next:
 
+  // store argument before stack alignment
+  mov eax, [esp+4]
+
   // ensure stack is 16 bytes aligned
   push ebp
   mov ebp, esp
   and esp, 0xFFFFFFF0
   push ebp
 
+  // save context
+  push {{.RegN.ebp}}                           // for save structure pointer
+  push {{.RegN.ebx}}                           // for save crypto key
+  push {{.RegN.esi}}                           // for save the memory page old protect
+
+  // save fields to non-volatile registers
+  mov {{.RegN.ebp}}, eax                       // save structure pointer
+  mov {{.RegN.ebx}}, [{{.RegN.ebp}} + 5*4]     // save crypto key
+
+  // encrypt return address
+  mov {{.RegV.ecx}}, [esp + 2*4]
+  xor {{.RegV.ecx}}, {{.RegN.ebx}}
+  mov [esp + 2*4], {{.RegV.ecx}}
 
 
 
+  // decrypt return address
+  mov {{.RegV.ecx}}, [esp + 2*4]
+  xor {{.RegV.ecx}}, {{.RegN.ebx}}
+  mov [esp + 2*4], {{.RegV.ecx}}
 
+  // restore context
+  pop {{.RegN.esi}}
+  pop {{.RegN.ebx}}
+  pop {{.RegN.ebp}}
 
   // restore stack and ebp
   pop ebp
   mov esp, ebp
   pop ebp
   ret 4
+
+xor_buf:
+  shr {{.RegV.edx}}, 2                         // calculate the loop count
+ loop_xor:
+  xor [{{.RegV.ecx}}], {{.RegN.ebx}}           // encrypt 8 bytes with xor
+  add {{.RegV.ecx}}, 4                         // add data address
+  dec {{.RegV.edx}}                            // update loop count
+  jnz loop_xor                                 // check need decrypt again
+  ret
+
+protect:
+  mov {{.RegV.eax}}, [esp+4]                   // read argument about new protect
+  sub esp, 0x04                                // for save old protect
+  push esp                                     // lpflOldProtect
+  push {{.RegV.eax}}                           // new protect
+  mov {{.RegV.ecx}}, [{{.RegN.ebp}} + 1*4]     // set size of critical
+  push {{.RegV.ecx}}                           // push size
+  mov {{.RegV.ecx}}, [{{.RegN.ebp}}]           // set address of critical
+  push {{.RegV.ecx}}                           // push address
+  mov {{.RegV.eax}}, [{{.RegN.ebp}} + 2*4]     // get address of VirtualProtect
+  call {{.RegV.eax}}                           // call VirtualProtect
+  mov {{.RegN.esi}}, [esp]                     // save old protect
+  add esp, 0x04                                // restore stack for old protect
+  ret
