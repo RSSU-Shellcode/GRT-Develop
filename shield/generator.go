@@ -78,6 +78,11 @@ func (gen *Generator) Generate(arch int, opts *Options) (ctx *Context, err error
 			err = errors.New(fmt.Sprint(r))
 		}
 	}()
+	switch arch {
+	case 32, 64:
+	default:
+		return nil, fmt.Errorf("unsupported architecture: %d", arch)
+	}
 	if opts == nil {
 		opts = new(Options)
 	}
