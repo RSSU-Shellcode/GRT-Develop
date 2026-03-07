@@ -24,6 +24,7 @@ func TestGarbage(t *testing.T) {
 			return
 		}
 
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	t.Run("x64", func(t *testing.T) {
@@ -34,6 +35,8 @@ func TestGarbage(t *testing.T) {
 		if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
 			return
 		}
+
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	err := generator.Close()
