@@ -5,6 +5,7 @@ import (
 	"os"
 	"syscall"
 	"testing"
+	"time"
 	"unsafe"
 
 	"github.com/stretchr/testify/require"
@@ -20,12 +21,12 @@ var (
 	procSetWaitableTimer     = modKernel32.NewProc("SetWaitableTimer")
 )
 
-func testNewShieldArgs(t *testing.T, critical []byte) *testShieldArgs {
+func testNewShieldArgs(t *testing.T, critical []byte, sleep time.Duration) *testShieldArgs {
 	hTimer, _, err := procCreateWaitableTimerA.Call(0, 0, 0)
 	if hTimer == 0 {
 		require.NoError(t, err)
 	}
-	dueTime := int64(-testSleepTime * 1000 * 10)
+	dueTime := -sleep.Milliseconds() * 1000 * 10
 	ok, _, err := procSetWaitableTimer.Call(
 		hTimer, uintptr(unsafe.Pointer(&dueTime)), 0, 0, 0, 1,
 	)

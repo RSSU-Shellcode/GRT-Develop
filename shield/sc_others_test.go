@@ -5,9 +5,10 @@ package shield
 import (
 	"syscall"
 	"testing"
+	"time"
 )
 
-func testNewShieldArgs(t *testing.T, critical []byte) *testShieldArgs {
+func testNewShieldArgs(t *testing.T, critical []byte, sleep time.Duration) *testShieldArgs {
 	return nil
 }
 
