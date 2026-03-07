@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestGenerator(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx.Output)
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	t.Run("x64", func(t *testing.T) {
@@ -34,7 +35,7 @@ func TestGenerator(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx.Output)
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	t.Run("invalid arch", func(t *testing.T) {
@@ -65,7 +66,7 @@ func TestSpecificSeed(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx1.Output)
+		testShield(t, ctx1.Output, testSleepTime)
 	})
 
 	t.Run("x64", func(t *testing.T) {
@@ -79,7 +80,46 @@ func TestSpecificSeed(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx1.Output)
+		testShield(t, ctx1.Output, testSleepTime)
+	})
+
+	err := generator.Close()
+	require.NoError(t, err)
+}
+
+func TestGeneratorFuzz(t *testing.T) {
+	const sleepTime = 30 * time.Millisecond
+
+	generator := NewGenerator()
+
+	t.Run("x86", func(t *testing.T) {
+		for i := 0; i < 100; i++ {
+			ctx, err := generator.Generate(32, nil)
+			require.NoError(t, err)
+			fmt.Println("size:", len(ctx.Output))
+			fmt.Println("seed:", ctx.Seed)
+
+			if runtime.GOOS != "windows" || runtime.GOARCH != "386" {
+				continue
+			}
+
+			testShield(t, ctx.Output, sleepTime)
+		}
+	})
+
+	t.Run("x64", func(t *testing.T) {
+		for i := 0; i < 100; i++ {
+			ctx, err := generator.Generate(64, nil)
+			require.NoError(t, err)
+			fmt.Println("size:", len(ctx.Output))
+			fmt.Println("seed:", ctx.Seed)
+
+			if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
+				continue
+			}
+
+			testShield(t, ctx.Output, sleepTime)
+		}
 	})
 
 	err := generator.Close()
