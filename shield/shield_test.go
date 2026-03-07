@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testSleepTime = 1000 // millisecond
+const testSleepTime = time.Second
 
 type testShieldArgs struct {
 	CriticalAddress     uintptr
@@ -39,7 +39,7 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx.Output)
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	t.Run("x64", func(t *testing.T) {
@@ -51,14 +51,14 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		testShield(t, ctx.Output)
+		testShield(t, ctx.Output, testSleepTime)
 	})
 
 	err := generator.Close()
 	require.NoError(t, err)
 }
 
-func testShield(t *testing.T, shield []byte) {
+func testShield(t *testing.T, shield []byte, sleep time.Duration) {
 	critical := make([]byte, 8192)
 	copy(critical, "runtime instruction")
 	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
@@ -66,11 +66,11 @@ func testShield(t *testing.T, shield []byte) {
 	address := testDeployShield(t, shield)
 	fmt.Printf("data address:   0x%X\n", criticalAddr)
 	fmt.Printf("shield address: 0x%X\n", address)
-	args := testNewShieldArgs(t, critical)
+	args := testNewShieldArgs(t, critical, sleep)
 	now := time.Now()
 
 	_, _, _ = syscallN(address, uintptr(unsafe.Pointer(args)))
 
-	require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
+	require.Greater(t, time.Since(now), sleep)
 	require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
 }
