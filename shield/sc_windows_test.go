@@ -2,7 +2,9 @@ package shield
 
 import (
 	"debug/pe"
+	"fmt"
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -21,7 +23,33 @@ var (
 	procSetWaitableTimer     = modKernel32.NewProc("SetWaitableTimer")
 )
 
-func testNewShieldArgs(t *testing.T, critical []byte, sleep time.Duration) *testShieldArgs {
+type testShieldArgs struct {
+	CriticalAddress     uintptr
+	CriticalSize        uintptr
+	VirtualProtect      uintptr
+	WaitForSingleObject uintptr
+	Timer               uintptr
+	Key                 uintptr
+}
+
+func testShield(t *testing.T, shield []byte, sleep time.Duration) {
+	critical := make([]byte, 8192)
+	copy(critical, "runtime instruction")
+	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
+
+	address := testDeployShield(t, shield)
+	fmt.Printf("data address:   0x%X\n", criticalAddr)
+	fmt.Printf("shield address: 0x%X\n", address)
+	args := testBuildShieldArgs(t, critical, sleep)
+	now := time.Now()
+
+	_, _, _ = syscall.SyscallN(address, uintptr(unsafe.Pointer(args)))
+
+	require.Greater(t, time.Since(now), sleep)
+	require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
+}
+
+func testBuildShieldArgs(t *testing.T, critical []byte, sleep time.Duration) *testShieldArgs {
 	hTimer, _, err := procCreateWaitableTimerA.Call(0, 0, 0)
 	if hTimer == 0 {
 		require.NoError(t, err)
@@ -80,11 +108,4 @@ func loadShellcode(t *testing.T, sc []byte) uintptr {
 	dst := unsafe.Slice((*byte)(unsafe.Pointer(scAddr)), size)
 	copy(dst, sc)
 	return scAddr
-}
-
-// for cross-compile
-//
-//go:uintptrescapes
-func syscallN(proc uintptr, args ...uintptr) (r1, r2 uintptr, err syscall.Errno) {
-	return syscall.SyscallN(proc, args...)
 }
