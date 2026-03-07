@@ -30,10 +30,6 @@ func TestShield(t *testing.T) {
 		RandSeed:  1234,
 	}
 
-	critical := make([]byte, 8192)
-	copy(critical, "runtime instruction")
-	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
-
 	t.Run("x86", func(t *testing.T) {
 		ctx, err := generator.Generate(32, opts)
 		require.NoError(t, err)
@@ -43,16 +39,7 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		shield := testDeployShield(t, ctx.Output)
-		fmt.Printf("data address:   0x%X\n", criticalAddr)
-		fmt.Printf("shield address: 0x%X\n", shield)
-		args := testNewShieldArgs(t, critical)
-		now := time.Now()
-
-		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
-
-		require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
-		require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
+		testShield(t, ctx.Output)
 	})
 
 	t.Run("x64", func(t *testing.T) {
@@ -64,18 +51,26 @@ func TestShield(t *testing.T) {
 			return
 		}
 
-		shield := testDeployShield(t, ctx.Output)
-		fmt.Printf("data address:   0x%X\n", criticalAddr)
-		fmt.Printf("shield address: 0x%X\n", shield)
-		args := testNewShieldArgs(t, critical)
-		now := time.Now()
-
-		_, _, _ = syscallN(shield, uintptr(unsafe.Pointer(args)))
-
-		require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
-		require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
+		testShield(t, ctx.Output)
 	})
 
 	err := generator.Close()
 	require.NoError(t, err)
+}
+
+func testShield(t *testing.T, shield []byte) {
+	critical := make([]byte, 8192)
+	copy(critical, "runtime instruction")
+	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
+
+	address := testDeployShield(t, shield)
+	fmt.Printf("data address:   0x%X\n", criticalAddr)
+	fmt.Printf("shield address: 0x%X\n", address)
+	args := testNewShieldArgs(t, critical)
+	now := time.Now()
+
+	_, _, _ = syscallN(address, uintptr(unsafe.Pointer(args)))
+
+	require.Greater(t, time.Since(now), time.Duration(testSleepTime)*time.Millisecond)
+	require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
 }
