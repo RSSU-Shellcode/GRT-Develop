@@ -3,24 +3,13 @@ package shield
 import (
 	"fmt"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/stretchr/testify/require"
 )
 
 const testSleepTime = time.Second
-
-type testShieldArgs struct {
-	CriticalAddress     uintptr
-	CriticalSize        uintptr
-	VirtualProtect      uintptr
-	WaitForSingleObject uintptr
-	Timer               uintptr
-	Key                 uintptr
-}
 
 func TestShield(t *testing.T) {
 	generator := NewGenerator()
@@ -56,21 +45,4 @@ func TestShield(t *testing.T) {
 
 	err := generator.Close()
 	require.NoError(t, err)
-}
-
-func testShield(t *testing.T, shield []byte, sleep time.Duration) {
-	critical := make([]byte, 8192)
-	copy(critical, "runtime instruction")
-	criticalAddr := uintptr(unsafe.Pointer(&critical[0]))
-
-	address := testDeployShield(t, shield)
-	fmt.Printf("data address:   0x%X\n", criticalAddr)
-	fmt.Printf("shield address: 0x%X\n", address)
-	args := testNewShieldArgs(t, critical, sleep)
-	now := time.Now()
-
-	_, _, _ = syscallN(address, uintptr(unsafe.Pointer(args)))
-
-	require.Greater(t, time.Since(now), sleep)
-	require.True(t, strings.HasPrefix(string(critical), "runtime instruction"))
 }
